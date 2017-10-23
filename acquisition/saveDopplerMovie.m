@@ -10,6 +10,7 @@ fullFileName = fullfile(folderName, fileName);
 % I = obj.I1;
 
 doppler.frames = obj.I1(:,:,1:iFrame);
+% again, there is timestamp misalignment because of the initial two frames
 doppler.softTimes = obj.time(3:iFrame+2);
 [xAxis, zAxis, dt] = obj.getAxis;
 doppler.xAxis = xAxis;

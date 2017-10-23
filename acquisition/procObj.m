@@ -10,17 +10,19 @@ classdef  procObj  < handle
         end
         
         function startFus(PO) 
-           global SCAN
-           display('call startFus'); 
+           fprintf('call startFus'); 
         end
            
         
         function newImage(PO)
             global SCAN 
             i=SCAN.fusIndex;
+            % there is a misalignment of the timestamps by 2 frames
             t=SCAN.time(i+2);
             fprintf('newImage, Image: %d time %.2f\n',i,t); 
             if i==1
+                % We start the acquisition in a'paused' mode and then
+                % change thid flag externally to actually  start the acquisition
                SCAN.flagPause = 1;
             else
                 saveCurrentBF(SCAN);
@@ -29,8 +31,10 @@ classdef  procObj  < handle
         
         function endFus(PO)
             global SCAN
-            display('call endFus');
+            fprintf('call endFus\');
+            % save the power doppler movies
             saveDopplerMovie(SCAN)
+            % set dummy paths, so that data is not getting overwritten
             setDummyPaths(SCAN);
 
         end
