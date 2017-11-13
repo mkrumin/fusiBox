@@ -18,16 +18,18 @@ bfRate = 1/doppler.dtBF;
 fusiFrameTimes = getFrameTimes(Timeline);
 % and these will be the 'middles' of the frames
 fusiFrameTimes = fusiFrameTimes + nBFPerFrame/2/bfRate; 
+
+% the last two frames acquired by the Verasonics are not
+% getting processes and are not making it into the final data
+fusiFrameTimes = fusiFrameTimes(1:end-2);
+% Timeline might miss the first few frames
+% Also, the first frame of the movie is acquired before the experiment
+% starts, the way acquisition currently works
 nFramesAcquired = length(fusiFrameTimes);
 
-if (length(doppler.softTimes) ~= nFramesAcquired)
-    % Timeline might miss the first few frames
-    % Also, the first frame of the movie is acquired before the experiment
-    % starts, the way acquisition currently works
-    nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
-    doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
-    doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
-end
+nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
+doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
+doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
 
 % these are stimulus onset/offset times, as detected from the
 % photodiode signal - nStims x nRepeats cell array

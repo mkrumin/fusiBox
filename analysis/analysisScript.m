@@ -1,8 +1,15 @@
 % analysis script
 
-ExpRef{1} = '2017-10-05_1_CR01';
-ExpRef{2} = '2017-10-05_3_CR01';
-ExpRef{3} = '2017-10-05_2_CR01';
+ExpRef = cell(1);
+
+% ExpRef{1} = '2017-10-05_1_CR01';
+% ExpRef{2} = '2017-10-05_3_CR01';
+% ExpRef{3} = '2017-10-05_2_CR01';
+
+ExpRef{1} = '2017-11-10_1_CR07';
+ExpRef{2} = '2017-11-10_3_CR07';
+
+%%
 
 for iSlice = 1:length(ExpRef)
     res(iSlice) = analyzeKalatskyFusi(ExpRef{iSlice});
@@ -10,7 +17,7 @@ end
 
 
 %%
-for iSlice = 2:2%length(ExpRef)
+for iSlice = 1:length(ExpRef)
     h(iSlice, :) = plotPreferenceMaps(res(iSlice).maps, res(iSlice).pars, 1);
     for iFig = 1:length(h(iSlice, :))
         h(iSlice, iFig).Name = res(iSlice).ExpRef;
