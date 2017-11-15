@@ -2,8 +2,8 @@ function out = analyzeAsyncNoiseFusi(ExpRef)
 
 if nargin<1
     % this is just for debugging
-%     ExpRef = '2017-11-10_2_CR07';
-    ExpRef = '2017-11-13_2_CR01';
+    ExpRef = '2017-11-10_2_CR07';
+%     ExpRef = '2017-11-13_2_CR01';
 end
 
 %%
@@ -39,20 +39,23 @@ doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
 % these are stimulus onset/offset times, as detected from the
 % photodiode signal - nStims x nRepeats cell array
 [stimTimes, stimFrameTimes] = getStimTimes(Timeline, p);
+[nStims, nRepeats] = size(stimTimes);
 if isequal(hwInfo.SyncSquare.Type, 'Flicker')
-    nFrames = size(stimTextures, 3);
-    if ~mod(nFrames, 2)
-        % if even number of frames, the last frame won't be detected by syncSquare
-        % the actuall stimOff was one frame later
-        for iStim = 1:length(stimTimes)
-            stimTimes{iStim}(2) = stimTimes{iStim}(2) + 1/hwInfo.FrameRate;
-        end
-    else
-        % TODO
-        % last stimFrameTimes for each stumulus presentation is actually just the 
-        % 'off' timestamp, so need to be removed
-        for iStim = 1:length(stimTimes)
-            % remove the last timeStamp from each stimulus Presentation
+    for iStim = 1:nStims
+        nFrames = size(stimTextures{iStim}, 3);
+        if ~mod(nFrames, 2)
+            % if even number of frames, the last frame won't be detected by syncSquare
+            % the actuall stimOff was one frame later
+            for iRepeat = 1:nRepeats
+                stimTimes{iStim, iRepeat}(2) = stimTimes{iStim, iRepeat}(2) + 1/hwInfo.FrameRate;
+            end
+        else
+            % last stimFrameTimes for each stumulus presentation is actually just the
+            % 'off' timestamp, so need to be removed
+            for iRepeat = 1:nRepeats
+                stimFrameTimes{iStim, iRepeat} = stimFrameTimes{iStim, iRepeat}(1:end-1);
+            end
+            
         end
     end
 end

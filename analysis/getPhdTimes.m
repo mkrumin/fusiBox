@@ -1,7 +1,7 @@
 function phdTimes = getPhdTimes(TL, stimStartTimes, stimEndTimes)
 
-phdTimes.up = [];
-phdTimes.down = [];
+
+phdTimes = struct('up',[], 'down', []);
 
 % find the channel index of the photodiode
 iCh = find(ismember({TL.hw.inputs.name}, 'photoDiode'));
@@ -48,9 +48,11 @@ for iStim = 1:nStims
     lastUpInd = find(allUps < allDowns(lastDownInd), 1, 'last');
     % make sure the first down is AFTER the first up
     firstDownInd = find(allDowns > allUps(firstUpInd), 1, 'first');
-    phdTimes.up = cat(1, phdTimes.up, allUps(firstUpInd:lastUpInd));
-    phdTimes.down = cat(1, phdTimes.down, allDowns(firstDownInd:lastDownInd));
+    phdTimes(iStim).up = allUps(firstUpInd:lastUpInd);
+    phdTimes(iStim).down = allDowns(firstDownInd:lastDownInd);
 end
+
+phdTimes = phdTimes(:);
 
 return;
 %%
