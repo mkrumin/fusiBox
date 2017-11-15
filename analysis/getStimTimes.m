@@ -1,4 +1,4 @@
-function stimTimes = getStimTimes(TL, p)
+function [stimTimes, flipTimes] = getStimTimes(TL, p)
 
 % stimTimes is a nStims x nRepeats cell array 
 % stimTimes{iStim, iRepeat}(1) - is the onset of stimulus iStim on repeat iRepeat
@@ -11,13 +11,15 @@ function stimTimes = getStimTimes(TL, p)
 udpStartTimes = getUDPTimes(TL, 'StimStart');
 udpEndTimes = getUDPTimes(TL, 'StimEnd');
 
-phdTimes = getPhdTimes(TL);
+phdTimes = getPhdTimes(TL, udpStartTimes, udpEndTimes);
 
 idx = cellfun(@(x) find(phdTimes.up>x , 1, 'first'), num2cell(udpStartTimes));
 stimStartTimes = phdTimes.up(idx)';
 
 idx = cellfun(@(x) find(phdTimes.down<x , 1, 'last'), num2cell(udpEndTimes));
 stimEndTimes = phdTimes.down(idx)';
+
+flipTimes = sort([phdTimes.up(:); phdTimes.down(:)], 'ascend');
 
 % parsing the protocol data - unrandomizing the sequence
 [nStims, nRepeats] = size(p.seqnums);
