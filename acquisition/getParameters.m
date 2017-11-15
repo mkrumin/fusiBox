@@ -12,3 +12,8 @@ for i= 1:length(props)
         data.(props{i}) = S.(props{i});
     end
 end
+
+data.sizeRF = size(S.RF{1});
+data.sizeBF = size(S.BF{1});
+data.sizeBFFilt = size(S.BFfilt);
+
