@@ -3,7 +3,7 @@ function out = analyzeAsyncNoiseFusi(ExpRef)
 if nargin<1
     % this is just for debugging
     ExpRef = '2017-11-10_2_CR07';
-%     ExpRef = '2017-11-13_2_CR01';
+    %     ExpRef = '2017-11-13_2_CR01';
 end
 
 %%
@@ -21,7 +21,7 @@ bfRate = 1/doppler.dtBF;
 % these are the frame onsets
 fusiFrameTimes = getFrameTimes(Timeline);
 % and these will be the 'middles' of the frames
-fusiFrameTimes = fusiFrameTimes + nBFPerFrame/2/bfRate; 
+fusiFrameTimes = fusiFrameTimes + nBFPerFrame/2/bfRate;
 
 % the last two frames acquired by the Verasonics are not
 % getting processes and are not making it into the final data
@@ -60,23 +60,39 @@ if isequal(hwInfo.SyncSquare.Type, 'Flicker')
     end
 end
 
-%%
-% these are indices of frames acquired during the corresponding stimuli
-stimFrames = cellfun(@(x) find(fusiFrameTimes>x(1) & fusiFrameTimes<x(2)), stimTimes, 'UniformOutput', false);
-
-pars = getStimPars(p);
-nStims = length(pars);
+%% fixing the stimulus frame times, if necessary 
 for iStim = 1:nStims
-    pars(iStim).xAxis = doppler.xAxis;
-    pars(iStim).yAxis = doppler.zAxis;
+    nFrames = size(stimTextures{iStim}, 3);
+    for iRepeat = 1:nRepeats
+        if numel(stimFrameTimes{iStim, iRepeat}) ~= nFrames || ...
+                isequal(hwInfo.SyncSquare.Type, 'Steady')
+            fprintf('WARNING! Stimulus %0.0f, Repeat %0.0f - using approximate frame times\n', ...
+                iStim, iRepeat);
+            tFirst = stimTimes{iStim, iRepeat}(1);
+            tLast = stimTimes{iStim, iRepeat}(2) - 1/hwInfo.FrameRate;
+            stimFrameTimes{iStim, iRepeat} = linspace(tFirst, tLast, nFrames)';
+        end
+    end
 end
 
-out.ExpRef = ExpRef;
-out.pars = pars;
-out.meanFrame = mean(doppler.frames, 3);
+%%
+% these are indices of frames acquired during the corresponding stimuli
+% stimFrames = cellfun(@(x) find(fusiFrameTimes>x(1) & fusiFrameTimes<x(2)), stimTimes, 'UniformOutput', false);
+
+% pars = getStimPars(p);
+% nStims = length(pars);
+% for iStim = 1:nStims
+%     pars(iStim).xAxis = doppler.xAxis;
+%     pars(iStim).yAxis = doppler.zAxis;
+% end
+% 
+% out.ExpRef = ExpRef;
+% out.pars = pars;
+% out.meanFrame = mean(doppler.frames, 3);
 
 mov = rmSVD(doppler.frames, 1);
+pRF = calcRF(stimFrameTimes, stimTextures, fusiFrameTimes, mov);
 
-out.averageMov = getAverageMovies(mov, fusiFrameTimes, stimTimes, pars);
-out.maps = getPreferenceMaps(mov, fusiFrameTimes, stimTimes, pars);
+% out.averageMov = getAverageMovies(mov, fusiFrameTimes, stimTimes, pars);
+% out.maps = getPreferenceMaps(mov, fusiFrameTimes, stimTimes, pars);
 
