@@ -2,8 +2,13 @@ function out = analyzeAsyncNoiseFusi(ExpRef)
 
 if nargin<1
     % this is just for debugging
+<<<<<<< Updated upstream
     ExpRef = '2017-11-10_2_CR07';
     %     ExpRef = '2017-11-13_2_CR01';
+=======
+%     ExpRef = '2017-11-10_2_CR07';
+    ExpRef = '2017-11-13_2_CR01';
+>>>>>>> Stashed changes
 end
 
 %%
