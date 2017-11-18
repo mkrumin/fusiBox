@@ -4,7 +4,8 @@ function out = calcRF(stimT, stim, movT, mov)
 
 [nZ, nX, nFrames] = size(mov);
 nVoxels = nZ*nX; % in the data movie
-movFlat = reshape(mov, nVoxels, nFrames)';
+movSVD = rmSVD(mov, 1);
+movFlat = reshape(movSVD, nVoxels, nFrames)';
 
 kernel = cell(nStims, nRepeats);
 tau = [-3:0.2:3]';
@@ -19,6 +20,7 @@ for iStim = 1:nStims
     end
 end
 
+out = kernel;
 end % calcRF()
 %% ================================================================
 
@@ -31,7 +33,7 @@ function eta = getETA(eventT, events, dataT, data, tau)
         eTimes = eventT(events(:, iPixel) == 1);
         nEvents = sum(events(:, iPixel) == 1);
         allTimes = bsxfun(@plus, eTimes, tau(:)');
-        allSnippets = interp1(dataT, data, allTimes(:));
+        allSnippets = interp1(single(dataT), single(data), single(allTimes(:)));
         allSnippets = reshape(allSnippets, nEvents, nLags, nVoxels);
         pixelResponse = permute(nanmean(allSnippets), [2 3 1]);
         eta(:, :, iPixel) = pixelResponse;
