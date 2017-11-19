@@ -29,7 +29,33 @@ end
 %%
 
 ax = plotYStack(res, yPosition);
+
+%% make a movie
+
 linkprop(ax, {'CameraPosition', 'CameraTarget', 'CameraViewAngle'});
+hFig = ax(1).Parent;
+
+nCycles = 8;
+azStart = -30;
+az = [0:2:360*nCycles] + azStart;
+elBias = 20;
+elStart = 20;
+elAmp = 40;
+el = elAmp*cos((az-azStart)/180*pi/nCycles - acos(elStart-elBias)) + elBias;
+
+tic
+vw = VideoWriter('2017-11-17_CR01_Retinotopy.avi');
+vw.FrameRate = 30;
+open(vw);
+for iFrame = 1:10%length(az)
+    fprintf('Frame %d/%d\n', iFrame, length(az))
+    view(ax(1), az(iFrame), el(iFrame));  
+    drawnow;
+    frame = getframe(hFig);
+    writeVideo(vw, frame.cdata); 
+end
+close(vw)
+toc
 
 %%
 for iSlice = 1:length(ExpRef)
