@@ -44,19 +44,20 @@ elAmp = 40;
 el = elAmp*cos((az-azStart)/180*pi/nCycles - acos(elStart-elBias)) + elBias;
 
 tic
-vw = VideoWriter('2017-11-17_CR01_Retinotopy.avi');
+vw = VideoWriter('2017-11-17_CR01_Retinotopy_smoothed.avi');
 vw.FrameRate = 30;
+vw.Quality = 90;
 open(vw);
-for iFrame = 1:10%length(az)
+for iFrame = 1:length(az)
     fprintf('Frame %d/%d\n', iFrame, length(az))
     view(ax(1), az(iFrame), el(iFrame));  
     drawnow;
-    frame = getframe(hFig);
+    frame = getframe(hFig, [180 0 1640 720]);
     writeVideo(vw, frame.cdata); 
 end
 close(vw)
 toc
-
+sendEmail('michael@cortexlab.net', 'rendering done');
 %%
 for iSlice = 1:length(ExpRef)
     h(iSlice, :) = plotPreferenceMaps(res(iSlice).maps, res(iSlice).pars, 1);

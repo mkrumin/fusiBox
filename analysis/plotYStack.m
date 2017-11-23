@@ -2,7 +2,8 @@ function ax = plotYStack(res, yy)
 
 doInterpolation = true;
 dY = 0.1;
-alphaPower = 2;
+alphaPower = 1.2;
+alphaPowerMean = 2.5;
 x0 = 6.6;
 y0 = 5;
 z0 = 2.3;
@@ -28,7 +29,7 @@ for iSlice=1:nSlices
     yPosAmp(:,:,iSlice) = res(iSlice).maps.ypos.amplitude;
 end
 % meanStack = xPosPref;
-%% 
+%%
 % crop the stacks and the axes
 xAxis = res(1).pars(1).xAxis;
 xIdx = find(xAxis>=3 & xAxis <=10);
@@ -47,6 +48,8 @@ meanStack = meanStack - min(meanStack(:));
 meanStack = meanStack/max(meanStack(:));
 meanStack = 1 - meanStack; % better for plotting
 % normalizing xpos and ypos together
+xPosAmp = imgaussfilt3(xPosAmp, [0.1 0.5 0.5]);
+yPosAmp = imgaussfilt3(yPosAmp, [0.1 0.5 0.5]);
 minAmp = min([xPosAmp(:); yPosAmp(:)]);
 maxAmp = max([xPosAmp(:); yPosAmp(:)]);
 xPosAmp = (xPosAmp - minAmp)/(maxAmp-minAmp);
@@ -90,7 +93,7 @@ end
 %% plotting starts here
 
 hFig = figure;
-hFig.Position = [10 200 1900 600];
+hFig.Position = [0 100 1920 720];
 
 ax(1) = subplot(1, 3, 1);
 hMean = slice(X, Y, Z, meanStack, xAxis, yAxis, zAxis, 'linear');
@@ -107,13 +110,13 @@ for i = 1:length(hMean)
     hMean(i).FaceAlpha = 'flat';
     if (max(hMean(i).XData(:)) - min(hMean(i).XData(:))) == 0
         ind = find(xAxis == hMean(i).XData(1));
-        hMean(i).AlphaData = squeeze(alphaMean(:, ind, :).^alphaPower);
+        hMean(i).AlphaData = squeeze(alphaMean(:, ind, :).^alphaPowerMean);
     elseif (max(hMean(i).YData(:)) - min(hMean(i).YData(:))) == 0
         ind = find(yAxis == hMean(i).YData(1));
-        hMean(i).AlphaData = squeeze(alphaMean(ind, :, :).^alphaPower);
+        hMean(i).AlphaData = squeeze(alphaMean(ind, :, :).^alphaPowerMean);
     elseif (max(hMean(i).ZData(:)) - min(hMean(i).ZData(:))) == 0
         ind = find(zAxis == hMean(i).ZData(1));
-        hMean(i).AlphaData = squeeze(alphaMean(:, :, ind).^alphaPower);
+        hMean(i).AlphaData = squeeze(alphaMean(:, :, ind).^alphaPowerMean);
     end
 end
 
@@ -129,7 +132,7 @@ caxis(cMinMax);
 colormap(ax(2), 'hsv')
 alphaXPos = xPosAmp; % max amplitude is the least transparent
 % suppress noise
-thr = 0.1;
+thr = 0.2;
 alphaXPos = (alphaXPos-thr)/(1-thr);
 alphaXPos = max(alphaXPos, 0);
 
@@ -162,7 +165,7 @@ caxis(cMinMax);
 colormap(ax(3), 'hsv')
 alphaYPos = yPosAmp; % max amplitude is the least transparent
 % suppress noise
-thr = 0.15;
+thr = 0.2;
 alphaYPos = (alphaYPos-thr)/(1-thr);
 alphaYPos = max(alphaYPos, 0);
 
@@ -209,6 +212,106 @@ for i = 1:3
     cb(i).Box = 'off';
 end
 % keyboard;
-%%
+
+return;
+%% Make a figure with all the slices as separate panels
+
+nSlices = length(yAxis);
+alphaPower = 0.5;
+for iSlice = nSlices:-1:1
+    h = figure;
+    h.Position = [100 100 1800 800];
+    h.Color = [1 1 1];
+    
+    % plotting vasculature
+    ah(1) = subplot(1, 3, 1);
+    colormap(ah(1), 'hot');
+    im = squeeze(meanStack(iSlice,:,:))';
+    imh = imagesc(xAxis, zAxis, im);
+    %     imh.AlphaData = 1-im;
+    %     imh.AlphaDataMapping = 'scaled';
+    axis equal tight
+    caxis(prctile(im(:), [2 95]))
+    cb = colorbar;
+    cb.Location = 'southoutside';
+    cb.Visible = 'off';
+    cb = colorbar;
+    cb.Location = 'eastoutside';
+    cb.Visible = 'off';
+    
+    title('Vasculature', 'FontSize', 14)
+    tx = text(min(xlim) - 1.5, mean(ylim), sprintf('AP = %4.2f [mm]', yAxis(iSlice)));
+    tx.HorizontalAlignment = 'Right';
+    tx.VerticalAlignment = 'Middle';
+    tx.FontSize = 14;
+    tx.FontWeight = 'bold';
+    
+    % plotting xpos
+    ah(2) = subplot(1, 3, 2);
+    colormap(ah(2), 'hsv');
+    im = squeeze(xPosPref(iSlice,:,:))';
+    imh = imagesc(xAxis, zAxis, im);
+    imh.AlphaData = squeeze(alphaXPos(iSlice,:,:))'.^alphaPower;
+    imh.AlphaDataMapping = 'scaled';
+    axis equal tight
+    caxis([0 2*pi]);
+    cb = colorbar;
+    cb.Location = 'southoutside';
+    cb.FontSize = 12;
+    cb.Ticks = linspace(0, 2*pi, 7);
+    cb.TickLabels = linspace(-135, 135, 7);
+    cb.Label.String = 'Azimuth [deg]';
+    cb.Label.FontSize = 14;
+
+    cb = colorbar;
+    cb.Location = 'eastoutside';
+    cb.Visible = 'off';
+    
+    title('xpos', 'FontSize', 14)
+
+    % plotting ypos
+    ah(3) = subplot(1, 3, 3);
+    colormap(ah(3), 'hsv');
+    im = squeeze(yPosPref(iSlice,:,:))';
+    imh = imagesc(xAxis, zAxis, im);
+    imh.AlphaData = squeeze(alphaYPos(iSlice,:,:))'.^alphaPower;
+    imh.AlphaDataMapping = 'scaled';
+    axis equal tight
+    caxis([0 2*pi]);
+    cb = colorbar;
+    cb.Location = 'southoutside';
+    cb.Visible = 'off';
+
+    cb = colorbar;
+    cb.Location = 'eastoutside';
+    cb.FontSize = 12;
+    cb.Ticks = linspace(0, 2*pi, 7);
+    cb.TickLabels = linspace(45, -45, 7);
+    cb.Label.String = 'Elevation [deg]';
+    cb.Label.FontSize = 14;
+    
+    title('ypos', 'FontSize', 14)
+
+    for i = 1:length(ah)
+        ah(i).FontSize = 12;
+        ah(i).YDir = 'normal';
+        ah(i).Color = h.Color;
+        ah(i).XLim = [min(xAxis), max(xAxis)];
+        ah(i).YLim = [min(zAxis), max(zAxis)];
+        ah(i).XTick = ceil(min(xAxis)):floor(max(xAxis));
+        ah(i).YTick = ceil(min(zAxis)):floor(max(zAxis));
+        xlabel(ah(i), 'ML [mm]', 'FontSize', 14);
+        ylabel(ah(i), 'DV [mm]', 'FontSize', 14);
+        ah(i).Box = 'off';
+        ah(i).XGrid = 'off';
+        ah(i).YGrid = 'off';
+    end
+    
+%     drawnow;
+%     pause(0.5);
+%     filename = sprintf('CR01_2017-11-17_AP%4.2f.eps', yAxis(iSlice));
+%     saveas(h, filename, 'epsc');
+end
+
 
 end
