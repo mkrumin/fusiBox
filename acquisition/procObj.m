@@ -19,13 +19,16 @@ classdef  procObj  < handle
             i=SCAN.fusIndex;
             % there is a misalignment of the timestamps by 2 frames
             t=SCAN.time(i);
-            fprintf('newImage, Image: %d time %.2f\n',i,t); 
+            try
+            dt = SCAN.time(i) - SCAN.time(i-1);
+            fprintf('Image: %d time %.2f, dt = %4.2fs\n',i,t, dt); 
+            end
             if i==1
                 % We start the acquisition in a'paused' mode and then
                 % change thid flag externally to actually  start the acquisition
                SCAN.flagPause = 1;
             end
-            saveCurrentBF(SCAN);
+%             saveCurrentBF(SCAN);
         end
         
         function endFus(PO)
