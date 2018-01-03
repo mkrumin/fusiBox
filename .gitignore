@@ -44,3 +44,10 @@ Temporary Items
 
 # Temporary Matlab files
 *.asv
+
+# Matlab p-files
+*.p
+
+# Multimedia files
+*.avi
+
