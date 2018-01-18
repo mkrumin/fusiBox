@@ -5,7 +5,7 @@ props = properties(S);
 
 data = struct;
 for i= 1:length(props)
-    if ismember(props{i}, {'RF', 'BF', 'BFfilt', 'I1'})
+    if ismember(props{i}, {'RF', 'BF', 'BFfilt', 'I1', 'BFobj'})
         % do not save these fields
         continue;
     else
