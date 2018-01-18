@@ -9,13 +9,11 @@ nFramesPerRun = round(singleRunDuration * frameRate);
 maxFrames = round(3600*frameRate);
 
 if SCAN.flagRun
-    tic
     SCAN.FilmFast(nFramesPerRun);
-    toc
     if isempty(nFramesAcc)
         % initialize variables on the first run
         nFramesAcc = 0;
-        [nZ, nX] = size(SCAN.I0);
+        [nZ, nX, ~] = size(SCAN.I1);
         % preallocate an empty array
         data = zeros(nZ, nX, maxFrames, class(SCAN.I1));
     end
@@ -27,16 +25,14 @@ if SCAN.flagRun
         fprintf('\nPreallocating more space...\n');
         data = cat(3, data, zeros(nZ, nX, maxFrames, class(SCAN.I1)));
     end
-    fprintf('\nSaving to the array...\n');
-    tic
     data(:,:,frameIdx) = dataBatch;
     nFramesAcc = nFramesAcc + nFramesBatch;
-    toc
-    fprintf('Now %d frames long\n', nFramesAcc)
+    nFramesAcc
     out = [];
 else
-    fprintf('flagRUN is false, returning the acquired data\n');
+    fprintf('Not running, returning the acquired data\n');
     out = data(:, :, 1:nFramesAcc);
+    nFramesAcc
     % persistent variables should be cleared outside the function by
     % calling 'clear acqLoop'
 end

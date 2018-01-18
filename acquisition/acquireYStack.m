@@ -5,10 +5,10 @@ function acquireYStack(mouseName, yCoords, S, M)
 % S - SCAN object to control the fUSi acquisition
 % M - motor object to control the movement
 
-Nimg = 10;
-NimgBM = 10;
+Nimg = 20;
+NimgBM = 1;
 dt = 0.5; % probably unnecessary
-quality = 'HQ';
+quality = 'LQ';
 
 nY = length(yCoords);
 
@@ -23,14 +23,16 @@ for iY = 1:nY
     fprintf('Slice %d/%d\n', iY, nY);
     fprintf('Moving to y = %4.2f [mm]\n', yCoords(iY));
     M.moveA(yCoords(iY));
+    pause(1);
     fprintf('Acquiring %d frames of B-Mode\n', NimgBM);
     for iN = 1:NimgBM
         S.Bmode(1);
         yStackBMode(:,:,iN,iY) = S.I0;
     end
     fprintf('Acquiring %d frames of Doppler\n', Nimg);
-    I0 = S.FilmDoppler(Nimg, dt, quality);
-    yStackDoppler(:,:,:,iY) = I0;
+%     I0 = S.FilmDoppler(Nimg, dt, quality);
+    S.FilmFast(Nimg);
+    yStackDoppler(:,:,:,iY) = S.I1;
     fprintf('Slice %d/%d done in %4.2f s, total %4.2f s\n', iY, nY, toc(tSlice), toc(tStart));
 end
 

@@ -57,37 +57,39 @@ switch info.instruction
             end
         end
         
-%         fprintf('let''s send UDP echo\n');
-%         fusiWorkaround;
-%         fprintf('\n\n\nClick START(paused) now, if not clicked yet!\n\n\n');
         t = timer;
         t.ExecutionMode = 'fixedSpacing';
-        t.Period = 0.02;
+        t.Period = 0.03;
         t.TimerFcn = @acqLoop;
-        t.StartDelay = ExpStartDelay;
+        t.StartDelay = 1;
         SCAN.flagRun = false;
+        % make sure the clear the buffered data
+        clear acqLoop;
         start(t);
-        fwrite(src, data);
-%         fprintf('let''s start scanning\n');
-%         pause(ExpStartDelay);
         SCAN.flagRun = 1;
+        pause(ExpStartDelay);
+        fwrite(src, data);
         
     case {'ExpEnd', 'ExpInterrupt'}
         % abort loop, if not aborted yet
         pause(stopDelay); % wait a bit before stopping imaging
         % not sure this works properly with fUSi, it might just block the
         % execution thread
-        SCAN.flagRun = 0;
-        fprintf('Acquisition stopped\n');
         stop(t);
+        while ~isequal(t.Running, 'off')
+            pause(0.1);
+        end
+        SCAN.flagRun = 0;
+        pause(1); % let fUSi stop, if still running
+        fprintf('Acquisition stopped\n');
         
         fprintf('retrieving data from memory\n')
         fusData = acqLoop;
         fprintf('saving data to disk\n');
         saveDopplerMovie(SCAN, fusData);
         % clear persistent variables inside the acqLoop function
-        fprintf('clear acLoop\n')
-        clear acqLoop;
+%         fprintf('clear acLoop\n')
+%         clear acqLoop;
         
         fprintf('echoing\n');
         fwrite(src, data);
