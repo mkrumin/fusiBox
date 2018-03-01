@@ -1,7 +1,16 @@
 function out = acqLoop(src, event)
 
 global SCAN
-persistent nFramesAcc data
+persistent nFramesAcc data inUse
+
+if inUse
+    timestamp = datestr(now, '[HH:MM:SS.FFF]');
+    fprintf('\n%s acqLoop in use, come back later, nFramesAcc = %2.0f\n', timestamp, nFramesAcc);
+    out = [];
+    return;
+end
+
+inUse = true;
 
 frameRate = 10; % [Hz] Currently this is the frame rate
 singleRunDuration = 5; % [sec]
@@ -9,6 +18,8 @@ nFramesPerRun = round(singleRunDuration * frameRate);
 maxFrames = round(3600*frameRate);
 
 if SCAN.flagRun
+    timestamp = datestr(now, '[HH:MM:SS.FFF]');
+    fprintf('\n%s starting acquisition, nFramesAcc = %2.0f\n', timestamp, nFramesAcc);
     SCAN.FilmFast(nFramesPerRun);
     if isempty(nFramesAcc)
         % initialize variables on the first run
@@ -27,12 +38,16 @@ if SCAN.flagRun
     end
     data(:,:,frameIdx) = dataBatch;
     nFramesAcc = nFramesAcc + nFramesBatch;
-    nFramesAcc
+    timestamp = datestr(now, '[HH:MM:SS.FFF]');
+    fprintf('\n%s finished acquisition, nFramesAcc = %2.0f\n', timestamp, nFramesAcc);
     out = [];
 else
     fprintf('Not running, returning the acquired data\n');
     out = data(:, :, 1:nFramesAcc);
-    nFramesAcc
+    timestamp = datestr(now, '[HH:MM:SS.FFF]');
+    fprintf('\n%s returning data, nFramesAcc = %2.0f\n', timestamp, nFramesAcc);
     % persistent variables should be cleared outside the function by
     % calling 'clear acqLoop'
 end
+
+inUse = false;

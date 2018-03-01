@@ -20,7 +20,8 @@ ip=src.DatagramAddress;
 port=src.DatagramPort;
 data=fread(src);
 str=char(data');
-fprintf('Received ''%s'' from %s:%d\n', str, ip, port);
+timestamp = datestr(now, '[HH:MM:SS.FFF]');
+fprintf('\n%s Received ''%s'' from %s:%d\n', timestamp, str, ip, port);
 
 info=dat.mpepMessageParse(str);
 
@@ -75,26 +76,51 @@ switch info.instruction
         pause(stopDelay); % wait a bit before stopping imaging
         % not sure this works properly with fUSi, it might just block the
         % execution thread
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s stopping the timer object\n', timestamp);
         stop(t);
         while ~isequal(t.Running, 'off')
             pause(0.1);
         end
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s timer object stopped\n', timestamp);
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s setting flagRun to ''false''\n', timestamp);
         SCAN.flagRun = 0;
-        pause(1); % let fUSi stop, if still running
-        fprintf('Acquisition stopped\n');
+%         if SCAN.flagUse
+% %             SCAN.flagUse = 0;
+%             pause(1); % let fUSi stop, if still running
+%         end
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s Acquisition stopped\n', timestamp);
         
-        fprintf('retrieving data from memory\n')
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%sretrieving data from memory\n', timestamp)
         fusData = acqLoop;
-        fprintf('saving data to disk\n');
+        if ~isempty(fusData);
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%ssaving data to disk\n', timestamp);
         saveDopplerMovie(SCAN, fusData);
         % clear persistent variables inside the acqLoop function
 %         fprintf('clear acLoop\n')
 %         clear acqLoop;
         
-        fprintf('echoing\n');
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%sechoing\n', timestamp);
         fwrite(src, data);
         
-        fprintf('Ready for new acquisition\n');
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%sReady for new acquisition\n', timestamp);
+        else
+            expendTimer = timer;
+            expendTimer.ExecutionMode = 'singleShot';
+            expendTimer.TimerFcn = @delayedExpEnd;
+            expendTimer.StartDelay = 5;
+            expendTimer.UserData = struct('u', src, 'str', data);
+            timestamp = datestr(now, '[HH:MM:SS.FFF]');
+            fprintf('\n%s Starting delayed ExpEnd\n', timestamp);
+            start(expendTimer);
+        end
         
         
     case 'BlockStart'

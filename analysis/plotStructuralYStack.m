@@ -2,7 +2,7 @@ function plotStructuralYStack(ExpRef)
 
 if nargin < 1
     ExpRef = '2017-12-15_2348_CR01';
-    ExpRef = '2018-01-18_1807_default';
+%     ExpRef = '2018-01-18_1807_default';
 end
 
 %%

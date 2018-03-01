@@ -7,7 +7,7 @@ motorObj = stpMotor('COM1');
 initScan308;
 
 %%
-animalName = 'default';
-yy = 0:0.1:4;
+animalName = 'CR01';
+yy = 0:0.1:5;
 %%
 acquireYStack(animalName, yy, SCAN, motorObj);
