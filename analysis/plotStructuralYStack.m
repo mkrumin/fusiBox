@@ -27,14 +27,14 @@ zz = Doppler.zAxis;
 % zIdx = zz > 0;
 zIdx = 1:length(zz);
 data = squeeze(mean(Doppler.yStack(zIdx, xIdx, :, :), 3));
-% data = log(data);
-cminmax = prctile(data(:), [0.01 98]);
+data = sqrt(data);
+cminmax = prctile(data(:), [0.01 99]);
 for iSlice = 1:nSlices
     ax = subplot(nRows, nColumns, iSlice);
     [iColumn, iRow] = ind2sub([nColumns, nRows], iSlice);
-    imagesc(xx(xIdx), zz(zIdx), log(data(:, :, iSlice)));
+    imagesc(xx(xIdx), zz(zIdx), (data(:, :, iSlice)));
     axis equal tight
-%     caxis(cminmax);
+    caxis(cminmax);
     colormap hot;
     if iRow == nRows && iColumn == 1
         xlabel('ML [mm]');
