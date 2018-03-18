@@ -18,17 +18,30 @@ for iStim = 1:nStims
         frameRange = find(frameIdx, 1, 'first') - 1 : find(frameIdx, 1, 'last') + 1;
         frameRange = frameRange(frameRange > 0 & frameRange<=length(frameTimes));
         nPoints = sum(frameIdx);
-        tAxis = linspace(tStart, tEnd, nPoints+1);
-        % we need to cut the last sample, so that the required frequency
-        % will be exactly the nCycles+1 sample of the Fourier transform
-        tAxis = tAxis(1:end-1);
-        snippet = interp1(frameTimes(frameRange), movFlat(frameRange, :), tAxis, 'spline', 'extrap');
-        snippetF = fft(snippet);
-        % get the information about the frequency of interest
-        freqData(iRepeat, :) = snippetF(p(iStim).nCycles+1, :);
-        % normalize by the overall power of the signal
+        
+        % analysis including interpolation before fft
+        
+%         tAxis = linspace(tStart, tEnd, nPoints+1);
+%         % we need to cut the last sample, so that the required frequency
+%         % will be exactly the nCycles+1 sample of the Fourier transform
+%         tAxis = tAxis(1:end-1);
+%         snippet = interp1(frameTimes(frameRange), movFlat(frameRange, :), tAxis, 'spline', 'extrap');
+%         snippetF = fft(snippet);
+%         % get the information about the frequency of interest
+%         freqData(iRepeat, :) = snippetF(p(iStim).nCycles+1, :);
+%         % normalize by the overall power of the signal
+%         ownMag = abs(freqData(iRepeat, :));
+%         relPower = ownMag.^2./sum(abs(snippetF).^2);
+%         freqData(iRepeat, :) = freqData(iRepeat, :)./ownMag.*relPower;
+        
+        % analysis without interpolation - 'direct' calculation of the fft
+        % of the single frequency of interest
+        tAxis = frameTimes(frameRange) - tStart;
+        tAxis = tAxis(:)';
+        f = 1/p(iStim).cycleDuration;
+        freqData(iRepeat, :) = (cos(2*pi*f*tAxis) - 1i*sin(2*pi*f*tAxis))*movFlat(frameRange, :);
         ownMag = abs(freqData(iRepeat, :));
-        relPower = ownMag.^2./sum(abs(snippetF).^2);
+        relPower = ownMag.^2./sum(abs(movFlat(frameRange, :)).^2)/nPoints;
         freqData(iRepeat, :) = freqData(iRepeat, :)./ownMag.*relPower;
         
     end
