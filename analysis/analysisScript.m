@@ -15,6 +15,8 @@ ExpRef = cell(1);
 
 ExpRef{1} = '2018-03-01_1_CR01';
 
+ExpRef{1} = '2018-03-16_1_CR01';
+
 % y-stack experiment
 for iExp=1:13
     ExpRef{iExp} = sprintf('2017-11-17_%1.0f_CR01', iExp+1);

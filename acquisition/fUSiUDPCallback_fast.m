@@ -9,7 +9,7 @@ function fUSiUDPCallback_fast(src, event)
 global SCAN
 persistent t
 
-ExpStartDelay = 3;
+ExpStartDelay = 5;
 stopDelay = 0; % delay in seconds between receiving ExpEnd and aborting (stopping) the acquisition
 % The best practive is to use 0, and use the ExpEnd delay feature in mpep
 % to acquire a few seconds of data after the last stimulus presentation.
@@ -39,18 +39,20 @@ switch info.instruction
         SCAN.animalName = info.subject;
         SCAN.experimentName = info.expRef;
         SCAN.animal = filePath;
-        SCAN.images = fullfile(filePath, 'images');
-        SCAN.info = fullfile(filePath, 'info');
-        SCAN.fus = fullfile(filePath, 'fus');
-        SCAN.fulldata = fullfile(filePath, 'fulldata');
-        SCAN.fileJournal = fullfile(filePath, 'info', [info.expRef, '.txt']);
+        SCAN.images = filePath;
+        SCAN.info = filePath;
+        SCAN.fus = filePath;
+        SCAN.fulldata = filePath;
+        SCAN.fileJournal = fullfile(filePath, [info.expRef, '.txt']);
         
         folders{1} = SCAN.images;
         folders{2} = SCAN.info;
         folders{3} = SCAN.fus;
         folders{4} = SCAN.fulldata;
         for iName = 1:length(folders)
-            [mkSuccess, message] = mkdir(folders{iName});
+            if ~exist(folders{iName}, 'dir')
+                [mkSuccess, message] = mkdir(folders{iName});
+            end
             if mkSuccess
                 fprintf('%s folder successfully created\n', folders{iName});
             else
@@ -95,22 +97,22 @@ switch info.instruction
         fprintf('\n%s Acquisition stopped\n', timestamp);
         
         timestamp = datestr(now, '[HH:MM:SS.FFF]');
-        fprintf('\n%sretrieving data from memory\n', timestamp)
+        fprintf('\n%s retrieving data from memory\n', timestamp)
         fusData = acqLoop;
-        if ~isempty(fusData);
+        if ~isempty(fusData)
         timestamp = datestr(now, '[HH:MM:SS.FFF]');
-        fprintf('\n%ssaving data to disk\n', timestamp);
+        fprintf('\n%s saving data to disk\n', timestamp);
         saveDopplerMovie(SCAN, fusData);
         % clear persistent variables inside the acqLoop function
 %         fprintf('clear acLoop\n')
 %         clear acqLoop;
         
         timestamp = datestr(now, '[HH:MM:SS.FFF]');
-        fprintf('\n%sechoing\n', timestamp);
+        fprintf('\n%s echoing\n', timestamp);
         fwrite(src, data);
         
         timestamp = datestr(now, '[HH:MM:SS.FFF]');
-        fprintf('\n%sReady for new acquisition\n', timestamp);
+        fprintf('\n%s Ready for new acquisition\n', timestamp);
         else
             expendTimer = timer;
             expendTimer.ExecutionMode = 'singleShot';

@@ -6,8 +6,12 @@ motorObj = stpMotor('COM1');
 % start the main fUSi GUI (to get the SCAN object)
 initScan308;
 
-%%
+%% 
 animalName = 'CR01';
-yy = 0:0.1:5;
-%%
+yy = 0:0.1:4;
+
+%% This is for older slow fUSi
+acquireYStack_old(animalName, yy, SCAN, motorObj);
+
+%% This is for Fast fUSi
 acquireYStack(animalName, yy, SCAN, motorObj);
