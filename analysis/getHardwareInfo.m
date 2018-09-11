@@ -5,7 +5,7 @@ function hwInfo = getHardwareInfo(ExpRef)
 filename = [file, '_hardwareInfo.mat'];
 
 
-% load the screen ino, trying to catch and fix the path issue 
+% load the screen info, trying to catch and fix the path issue 
 % (data\ vs. data2\)
 try 
     hw = load(fullfile(folder, filename));

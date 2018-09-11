@@ -5,7 +5,7 @@ function acquireYStack_old(mouseName, yCoords, S, M)
 % S - SCAN object to control the fUSi acquisition
 % M - motor object to control the movement
 
-Nimg = 10;
+Nimg = 15;
 NimgBM = 1;
 dt = 0.5; % probably unnecessary
 quality = 'LQ';

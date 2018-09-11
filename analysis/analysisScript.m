@@ -15,7 +15,7 @@ ExpRef = cell(1);
 
 ExpRef{1} = '2018-03-01_1_CR01';
 
-ExpRef{1} = '2018-03-16_2_CR01';
+ExpRef{1} = '2018-03-19_2_CR01';
 
 % y-stack experiment
 for iExp=1:13
@@ -23,6 +23,7 @@ for iExp=1:13
 end
 yPosition = [0 1 2 3 4 0.33 1.33 2.33 3.33 0.67 1.67 2.67 3.67];
 %%
+ExpRef = {'2018-03-30_5_CR009'};
 
 nSlices = length(ExpRef);
 for iSlice = 1:nSlices

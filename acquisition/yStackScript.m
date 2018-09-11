@@ -7,8 +7,8 @@ motorObj = stpMotor('COM1');
 initScan308;
 
 %% 
-animalName = 'CR01';
-yy = 0:0.1:4;
+animalName = 'CR009';
+yy = 0:0.1:5.3;
 
 %% This is for older slow fUSi
 acquireYStack_old(animalName, yy, SCAN, motorObj);
