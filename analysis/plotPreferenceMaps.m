@@ -1,7 +1,7 @@
 function h = plotPreferenceMaps(maps, p, plotHemo)
 
 if nargin<3
-    plotHemo = fasle;
+    plotHemo = false;
 end
 
 nRows = 1;

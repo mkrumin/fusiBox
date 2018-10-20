@@ -11,19 +11,38 @@ p = getMpepProtocol(ExpRef);
 Timeline = getTimeline(ExpRef);
 
 doppler = getDoppler(ExpRef);
-nBFPerFrame = 180; % hard-coded for now, should be saved in the doppler structure
+if isfield(doppler, 'nBFPerFrame')
+    nBFPerFrame = doppler.nBFPerFrame;
+else
+    nBFPerFrame = 180; % hard-coded for older datasets
+end
 bfRate = 1/doppler.dtBF;
 
 % these are the frame onsets
 fusiFrameTimes = getFrameTimes(Timeline);
 % and these will be the 'middles' of the frames
 fusiFrameTimes = fusiFrameTimes + nBFPerFrame/2/bfRate; 
-nFramesAcquired = length(fusiFrameTimes);
 
-if (length(doppler.softTimes) ~= nFramesAcquired)
+if isempty(doppler.softTimes)
+    % this part is for fast fUSi acquisitions
+    nFramesAcquired = size(doppler.frames, 3);
+    nNeuralFrames = numel(fusiFrameTimes);
+    if nNeuralFrames > nFramesAcquired
+        % this might happen sometimes
+        fusiFrameTimes = (1:nFramesAcquired);
+    elseif nNeuralFrames < nFramesAcquired
+        % something went wrong, careful inspection required
+        error('Not all the frames have corresponding TTLs, manually inspect the data');
+    end
+else % this is for older datasets
+    % the last two frames acquired by the Verasonics are not
+    % getting processes and are not making it into the final data
+    fusiFrameTimes = fusiFrameTimes(1:end-2);
     % Timeline might miss the first few frames
     % Also, the first frame of the movie is acquired before the experiment
     % starts, the way acquisition currently works
+    nFramesAcquired = length(fusiFrameTimes);
+    
     nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
     doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
     doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);

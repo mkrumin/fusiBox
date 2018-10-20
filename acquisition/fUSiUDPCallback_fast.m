@@ -1,4 +1,4 @@
-function fUSiUDPCallback(src, event)
+function fUSiUDPCallback_fast(src, event)
 
 % fprintf('%s:%d\n', u.DatagramAddress, u.DatagramPort),
 % u.RemoteHost=u.DatagramAddress;
@@ -7,6 +7,7 @@ function fUSiUDPCallback(src, event)
 
 % persistent folders
 global SCAN
+persistent t
 
 ExpStartDelay = 5;
 stopDelay = 0; % delay in seconds between receiving ExpEnd and aborting (stopping) the acquisition
@@ -19,7 +20,8 @@ ip=src.DatagramAddress;
 port=src.DatagramPort;
 data=fread(src);
 str=char(data');
-fprintf('Received ''%s'' from %s:%d\n', str, ip, port);
+timestamp = datestr(now, '[HH:MM:SS.FFF]');
+fprintf('\n%s Received ''%s'' from %s:%d\n', timestamp, str, ip, port);
 
 info=dat.mpepMessageParse(str);
 
@@ -58,40 +60,82 @@ switch info.instruction
             end
         end
         
-%         fprintf('let''s send UDP echo\n');
-        fusiWorkaround;
-        fprintf('\n\n\nClick START(paused) now, if not clicked yet!\n\n\n');
-        fwrite(src, data);
-%         fprintf('let''s start scanning\n');
+        t = timer;
+        t.ExecutionMode = 'fixedSpacing';
+        t.Period = 0.03;
+        t.TimerFcn = @acqLoop;
+        t.StartDelay = 1;
+        SCAN.flagRun = false;
+        % make sure the clear the buffered data
+        clear acqLoop;
+        start(t);
+        SCAN.flagRun = 1;
         pause(ExpStartDelay);
-        SCAN.flagPause = 0;
+        fwrite(src, data);
         
     case {'ExpEnd', 'ExpInterrupt'}
         % abort loop, if not aborted yet
         pause(stopDelay); % wait a bit before stopping imaging
+        % not sure this works properly with fUSi, it might just block the
+        % execution thread
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s stopping the timer object\n', timestamp);
+        stop(t);
+        while ~isequal(t.Running, 'off')
+            pause(0.1);
+        end
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s timer object stopped\n', timestamp);
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s setting flagRun to ''false''\n', timestamp);
         SCAN.flagRun = 0;
-        fprintf('Acquisition stopped\n');
+%         if SCAN.flagUse
+% %             SCAN.flagUse = 0;
+%             pause(1); % let fUSi stop, if still running
+%         end
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s Acquisition stopped\n', timestamp);
         
-        %         [filePath, fileStem] = dat.expPath('2017-01-01_0_junk', 'main', 'local');
-
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s retrieving data from memory\n', timestamp)
+        fusData = acqLoop;
+        if ~isempty(fusData)
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s saving data to disk\n', timestamp);
+        saveDopplerMovie(SCAN, fusData);
+        % clear persistent variables inside the acqLoop function
+%         fprintf('clear acLoop\n')
+%         clear acqLoop;
+        
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s echoing\n', timestamp);
         fwrite(src, data);
         
-        % Files are saved in the procObj callback function
-        
-        fprintf('Ready for new acquisition\n');
+        timestamp = datestr(now, '[HH:MM:SS.FFF]');
+        fprintf('\n%s Ready for new acquisition\n', timestamp);
+        else
+            expendTimer = timer;
+            expendTimer.ExecutionMode = 'singleShot';
+            expendTimer.TimerFcn = @delayedExpEnd;
+            expendTimer.StartDelay = 5;
+            expendTimer.UserData = struct('u', src, 'str', data);
+            timestamp = datestr(now, '[HH:MM:SS.FFF]');
+            fprintf('\n%s Starting delayed ExpEnd\n', timestamp);
+            start(expendTimer);
+        end
         
         
     case 'BlockStart'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     case 'BlockEnd'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     case 'StimStart'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     case 'StimEnd'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     otherwise
         fprintf('Unknown instruction : %s', info.instruction);
