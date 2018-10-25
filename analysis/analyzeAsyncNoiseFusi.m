@@ -11,7 +11,7 @@ p = getMpepProtocol(ExpRef);
 
 hwInfo = getHardwareInfo(ExpRef);
 
-stimTextures = getStimTextures(hwInfo, p.pars);
+stimTextures = getStimTextures(hwInfo, p.pars, p.xfile);
 Timeline = getTimeline(ExpRef);
 
 doppler = getDoppler(ExpRef);
