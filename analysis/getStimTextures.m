@@ -6,17 +6,20 @@ out = cell(nStims, 1);
 [~, mFileName, ~] = fileparts(xFileName);
 for iStim = 1:nStims
     ss = feval(mFileName, myScreenInfo, pars(:, iStim));
-    stimTextures = cell2mat(reshape(ss.ImageTextures, 1, 1, ss.nImages));
-
-% apply patches for known issues in specific stimulus files here
+    out{iStim}.stimTextures = ss.ImageTextures;
+    out{iStim}.textureSequence = ss.ImageSequence(:);
+    
+    % apply patches for known issues in specific stimulus files here
     switch mFileName
         case 'stimSparseNoiseUncorrAsync_whiteonblack'
-            % top row and top column are not actually shown on the screen
-            stimTextures = stimTextures(2:end, 2:end, :);
-            % In this x-file all the '-1' are clipped during presentation
-            % resulting in white squares on black background
-            out{iStim} = max(stimTextures, 0);
+            for iTexture = 1:length(out{iStim}.stimTextures)
+                % top row and top column are not actually shown on the screen
+                % In this x-file all the '-1' are clipped during presentation
+                % resulting in white squares on black background
+                out{iStim}.stimTextures{iTexture} = ...
+                    max(out{iStim}.stimTextures{iTexture}(2:end, 2:end, :), 0);
+            end
         otherwise
-            out{iStim} = stimTextures;
+            % do nothing
     end
 end

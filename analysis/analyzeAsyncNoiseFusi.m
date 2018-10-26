@@ -11,7 +11,9 @@ p = getMpepProtocol(ExpRef);
 
 hwInfo = getHardwareInfo(ExpRef);
 
-stimTextures = getStimTextures(hwInfo, p.pars, p.xfile);
+stim = getStimTextures(hwInfo, p.pars, p.xfile);
+% converting from cell array to a 3D matrix
+stimTextures = cell2mat(reshape(stim{1}.stimTextures(stim{1}.textureSequence), 1, 1, length(stim{1}.textureSequence)));
 Timeline = getTimeline(ExpRef);
 
 doppler = getDoppler(ExpRef);
