@@ -23,7 +23,7 @@ for iExp = 1:length(ExpRefs)
         hwInfo = getHardwareInfo(ExpRefs{iExp});
         hwInfo.windowPtr = NaN;
         stim = getStimTextures(hwInfo, p.pars, p.xfile);
-        fprintf('and textures\n');
+        fprintf('and textures (from %s)\n', p.xfile);
         folderName = dat.expPath(ExpRefs{iExp}, 'main', 'master');
         fileName = sprintf('%s_stimTextures.mat', ExpRefs{iExp});
         save(fullfile(folderName, fileName), 'stim', '-v7.3')
