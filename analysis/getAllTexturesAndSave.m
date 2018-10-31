@@ -26,7 +26,7 @@ for iExp = 1:length(ExpRefs)
         fprintf('and textures (from %s)\n', p.xfile);
         folderName = dat.expPath(ExpRefs{iExp}, 'main', 'master');
         fileName = sprintf('%s_stimTextures.mat', ExpRefs{iExp});
-        save(fullfile(folderName, fileName), 'stim', '-v7.3')
+        save(fullfile(folderName, fileName), 'stim')
         fprintf('Saved to %s\n', fullfile(folderName, fileName));
     catch e
         fprintf('\n%s\n', e.message)
