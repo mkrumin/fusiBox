@@ -6,9 +6,16 @@ if nargin < 1
 end
 
 %%
-folder = dat.expPath(ExpRef, 'master', 'local');
 
-load(fullfile(folder, [ExpRef, '_fUSiYStack.mat']))
+try
+    % try loading from local repository first
+    folder = dat.expPath(ExpRef, 'main', 'local');
+    load(fullfile(folder, [ExpRef, '_fUSiYStack.mat']))
+catch
+    % if not on local PC, load from the server
+    folder = dat.expPath(ExpRef, 'main', 'master');
+    load(fullfile(folder, [ExpRef, '_fUSiYStack.mat']))
+end
 
 nSlices = length(yCoords);
 nRows = floor(sqrt(nSlices));
@@ -42,6 +49,6 @@ for iSlice = 1:nSlices
     else
         set(gca, 'XTickLabel', '', 'YTickLabel', '');
     end
-%     title(yCoords(iSlice))
+    title(yCoords(iSlice))
     ax.Position = ax.Position + [-0.01 -0.01 0.02 0.02];
 end
