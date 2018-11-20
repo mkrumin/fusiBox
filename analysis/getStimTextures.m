@@ -9,10 +9,12 @@ for iStim = 1:nStims
         ss = feval(mFileName, myScreenInfo, pars(:, iStim));
         out{iStim}.stimTextures = ss.ImageTextures;
         out{iStim}.textureSequence = ss.ImageSequence(:);
+        out{iStim}.DestRects = ss.DestRects;
     catch e
         fprintf('\nCould not get a texture of type %s, with a message:\n%s\n', xFileName, e.message)
         out{iStim}.stimTextures = NaN;
         out{iStim}.textureSequence = NaN;
+        out{iStim}.DestRects = NaN;
     end
     
     % apply patches for known issues in specific stimulus files here
