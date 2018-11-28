@@ -17,6 +17,10 @@ yStackDoppler = nan(numel(zAxisDop), numel(xAxisDop), Nimg, nY, 'single');
 [xAxisBM, zAxisBM] = S.getAxis('BM');
 yStackBMode = nan(numel(zAxisBM), numel(xAxisBM), NimgBM, nY, 'single');
 
+hFig = figure;
+nRows = floor(sqrt(nY));
+nColumns = ceil(nY/nRows);
+
 tStart = tic;
 for iY = 1:nY
     tSlice = tic;
@@ -32,6 +36,16 @@ for iY = 1:nY
     fprintf('Acquiring %d frames of Doppler\n', Nimg);
     I0 = S.FilmDoppler(Nimg, dt, quality);
     yStackDoppler(:,:,:,iY) = I0;
+
+    figure(hFig);
+    subplot(nRows, nColumns, iY);
+    im = sqrt(mean(yStackDoppler(:,:,:,iY), 3));
+    imagesc(xAxisDop, zAxisDop, im);
+    caxis(prctile(im(:), [1 99.7]));
+    colormap hot;
+    axis equal tight
+    title(sprintf('y = %4.2f', yCoords(iY)));
+
     fprintf('Slice %d/%d done in %4.2f s, total %4.2f s\n', iY, nY, toc(tSlice), toc(tStart));
 end
 
