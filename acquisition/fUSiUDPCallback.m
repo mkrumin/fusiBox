@@ -43,6 +43,9 @@ switch info.instruction
         SCAN.fulldata = filePath;
         SCAN.fileJournal = fullfile(filePath, [info.expRef, '.txt']);
         
+        M = src.UserData.motorObj;
+        SCAN.HARD.motorPosition = M.Xmm;
+        
         folders{1} = SCAN.images;
         folders{2} = SCAN.info;
         folders{3} = SCAN.fus;
