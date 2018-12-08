@@ -20,7 +20,7 @@ end
 doppler.xAxis = xAxis;
 doppler.zAxis = zAxis;
 doppler.motorPosition = obj.HARD.motorPosition;
-doppler.nBFPerFrame = obj.parSeq.HQ.NfrBk;
+doppler.nBFPerFrame = size(obj.BFfilt, 1);
 doppler.dtBF = dt(1);
 doppler.dtSinglePlanewave = dt(2);
 doppler.dtRF = dt(3);
