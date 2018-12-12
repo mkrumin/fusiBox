@@ -64,9 +64,10 @@ switch info.instruction
 %         fprintf('let''s send UDP echo\n');
         fusiWorkaround;
         fprintf('\n\n\nClick START(paused) now, if not clicked yet!\n\n\n');
+        
+        pause(ExpStartDelay);
         fwrite(src, data);
 %         fprintf('let''s start scanning\n');
-        pause(ExpStartDelay);
         SCAN.flagPause = 0;
         
     case {'ExpEnd', 'ExpInterrupt'}

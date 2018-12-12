@@ -2,18 +2,22 @@ classdef  procObj  < handle
     
     properties
       % define user properties here
+      saveBF = false;
+      saveBFFilt = false;
     end
     
     methods        
-        function PO=prcObj()
+        function obj=procObj(h)
            % init the object here  
+           obj.saveBF = h.saveBF;
+           obj.saveBFFilt = h.saveBFFilt;
         end
         
-        function startFus(PO) 
+        function startFus(obj) 
            fprintf('call startFus'); 
         end
         
-        function newImage(PO)
+        function newImage(obj)
             global SCAN
             i=SCAN.fusIndex;
             % there is a misalignment of the timestamps by 2 frames
@@ -27,10 +31,15 @@ classdef  procObj  < handle
                 % change this flag externally to actually  start the acquisition
                 SCAN.flagPause = 1;
             end
-            %             saveCurrentBF(SCAN);
+            
+            if i~=1 && (obj.saveBF || obj.saveBFFilt)
+                tic
+                saveCurrentBF(SCAN, obj);
+                toc
+            end
         end
         
-        function endFus(PO)
+        function endFus(obj)
             global SCAN
             fprintf('call endFus\n');
             % save the power doppler movies
