@@ -10,11 +10,15 @@ for iStim = 1:nStims
         out{iStim}.stimTextures = ss.ImageTextures;
         out{iStim}.textureSequence = ss.ImageSequence(:);
         out{iStim}.DestRects = ss.DestRects;
+        out{iStim}.Amplitudes = ss.Amplitudes;
+        out{iStim}.MinusOneToOne = ss.MinusOneToOne;
     catch e
         fprintf('\nCould not get a texture of type %s, with a message:\n%s\n', xFileName, e.message)
         out{iStim}.stimTextures = NaN;
         out{iStim}.textureSequence = NaN;
         out{iStim}.DestRects = NaN;
+        out{iStim}.Amplitudes = NaN;
+        out{iStim}.MinusOneToOne = NaN;
     end
     
     % apply patches for known issues in specific stimulus files here
