@@ -19,7 +19,7 @@ classdef YStack < handle
             obj.xAxis = data.Doppler.xAxis;
             obj.zAxis = data.Doppler.zAxis;
             obj.yAxis = data.yCoords;
-%             obj.Doppler = squeeze(median(data.Doppler.yStack, 3));
+            %             obj.Doppler = squeeze(median(data.Doppler.yStack, 3));
             obj.Doppler = squeeze(min(data.Doppler.yStack, [], 3));
             obj.BMode = data.BMode;
             obj.BMode.yStack = squeeze(obj.BMode.yStack);
@@ -75,8 +75,8 @@ classdef YStack < handle
             ax.DataAspectRatio = [1 1 1];
             ax.CameraViewAngle = 9;
             ax.ZDir = 'reverse';
-%             ax.XLim = xLimits;
-%             ax.ZLim = zLimits;
+            %             ax.XLim = xLimits;
+            %             ax.ZLim = zLimits;
             view(ax, -30, 20);
             ax.XLabel.String = 'ML [mm]';
             ax.YLabel.String = 'AP [mm]';
@@ -122,6 +122,26 @@ classdef YStack < handle
                 title(obj.yAxis(sliceIdx(iSlice)))
                 ax.Position = ax.Position + [-0.01 -0.01 0.02 0.02];
                 ax.FontSize = 14;
+            end
+        end
+        
+        function F = renderVolumeRotation(obj)
+            h = obj.plotVolume;
+            ax = gca; % assuming there is only one axes
+            % switching off axis, labels, and title
+            axis off tight;
+            ax.Title.Visible = 'off';
+%             ax.CameraTargetMode = 'manual';
+            azimuth = -30 + [0:1:359];
+            nFrames = length(azimuth);
+            view(ax, azimuth(1), 20)
+            drawnow;
+            F = getframe(h);
+            for iFrame = 2:nFrames
+                fprintf('Rendering frame #%g/%g\n', iFrame, nFrames);
+                view(ax, azimuth(iFrame), 20)
+                drawnow;
+                F(iFrame) = getframe(h);
             end
         end
     end
