@@ -9,7 +9,7 @@ end
 
 %%
 for iStack = 1:nStacks
-    h = st(iStack).plotVolume;
+    st(iStack).plotVolume;
     st(iStack).plotSlices;
 end
 

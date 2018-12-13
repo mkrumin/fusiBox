@@ -1,14 +1,13 @@
 classdef YStack < handle
     
-    
     properties
         ExpRef = '';
         xAxis = [];
         zAxis = [];
         yAxis = [];
+        boundingBox = struct('x', [], 'y', [], 'z', []);
         Doppler = [];
         BMode = [];
-        
     end
     
     methods
@@ -24,11 +23,41 @@ classdef YStack < handle
             obj.BMode = data.BMode;
             obj.BMode.yStack = squeeze(obj.BMode.yStack);
             obj.BMode.yAxis = data.yCoords;
+            obj.boundingBox.x = [min(obj.xAxis), max(obj.xAxis)];
+            obj.boundingBox.y = [min(obj.yAxis), max(obj.yAxis)];
+            obj.boundingBox.z = [min(obj.zAxis), max(obj.zAxis)];
+        end
+        
+        function getBoundingBox(obj)
+            h = figure;
+            data = max(obj.Doppler, [], 3);
+            data = sqrt(data);
+            imagesc(obj.xAxis, obj.zAxis, data);
+            axis equal tight;
+            colormap hot
+            caxis(prctile(data(:), [1 99]));
+            title('Draw a rectangle surrounding the brain, then double click it');
+            hRect = imrect(gca);
+            pos = wait(hRect);
+            delete(hRect);
+            [~, ind] = min(abs(obj.xAxis - pos(1)));
+            xMin = obj.xAxis(ind);
+            [~, ind] = min(abs(obj.xAxis - pos(1) - pos(3)));
+            xMax = obj.xAxis(ind);
+            [~, ind] = min(abs(obj.zAxis - pos(2)));
+            zMin = obj.zAxis(ind);
+            [~, ind] = min(abs(obj.zAxis - pos(2) - pos(4)));
+            zMax = obj.zAxis(ind);
+            xlim([xMin, xMax]);
+            ylim([zMin, zMax]);
+            title('This will be the bounding box for this stack');
+            obj.boundingBox.x = [xMin, xMax];
+            obj.boundingBox.z = [zMin, zMax];
         end
         
         function hFig = plotVolume(obj)
-            xLimits = [2.4, 10.4];
-            zLimits = [0.2, 5.9];
+            xLimits = obj.boundingBox.x;
+            zLimits = obj.boundingBox.z;
             xIdx = obj.xAxis >= xLimits(1) & obj.xAxis <= xLimits(2);
             zIdx = obj.zAxis >= zLimits(1) & obj.zAxis <= zLimits(2);
             xx = obj.xAxis(xIdx);
@@ -56,7 +85,7 @@ classdef YStack < handle
             % clip the alpha mask to be between 0 and 1
             alphaVal = max(min(alphaVal, 1), 0);
             alphaVal = 1-alphaVal;
-            
+            % apply appropriate transparency to each slice object
             for i = 1:length(hSlice)
                 hSlice(i).LineStyle = 'none';
                 hSlice(i).FaceAlpha = 'flat';
@@ -71,13 +100,11 @@ classdef YStack < handle
                     hSlice(i).AlphaData = squeeze(alphaVal(:, :, ind).^alphaPower);
                 end
             end
-            
             ax.DataAspectRatio = [1 1 1];
             ax.CameraViewAngle = 9;
             ax.ZDir = 'reverse';
-            %             ax.XLim = xLimits;
-            %             ax.ZLim = zLimits;
             view(ax, -30, 20);
+            axis(ax, 'tight');
             ax.XLabel.String = 'ML [mm]';
             ax.YLabel.String = 'AP [mm]';
             ax.ZLabel.String = 'DV [mm]';
@@ -89,16 +116,18 @@ classdef YStack < handle
             if nargin < 2
                 nSlices = length(obj.yAxis);
                 sliceIdx = 1:length(obj.yAxis);
+                printAxesTitles = false;
             else
                 nSlices = length(sliceIdx);
+                printAxesTitles = true;
             end
             nRows = floor(sqrt(nSlices));
             nColumns = ceil(nSlices/nRows);
             
-            xIdx = obj.xAxis >= 2.4 & obj.xAxis <= 10.4;
+            xIdx = obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2);
             xx = obj.xAxis(xIdx);
             xx = xx - mean(xx);
-            zIdx = obj.zAxis>=0.2 & obj.zAxis<=5.9;
+            zIdx = obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2);
             zz = obj.zAxis(zIdx);
             zz = zz - zz(1);
             
@@ -119,7 +148,9 @@ classdef YStack < handle
                 else
                     set(gca, 'XTickLabel', '', 'YTickLabel', '');
                 end
-                title(obj.yAxis(sliceIdx(iSlice)))
+                if printAxesTitles
+                    title(obj.yAxis(sliceIdx(iSlice)))
+                end
                 ax.Position = ax.Position + [-0.01 -0.01 0.02 0.02];
                 ax.FontSize = 14;
             end
