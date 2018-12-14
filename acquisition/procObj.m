@@ -33,9 +33,9 @@ classdef  procObj  < handle
             end
             
             if i~=1 && (obj.saveBF || obj.saveBFFilt)
-                tic
+%                 tic
                 saveCurrentBF(SCAN, obj);
-                toc
+%                 toc
             end
         end
         
