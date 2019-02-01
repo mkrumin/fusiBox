@@ -63,11 +63,17 @@ switch info.instruction
         
 %         fprintf('let''s send UDP echo\n');
         fusiWorkaround;
-        fprintf('\n\n\nClick START(paused) now, if not clicked yet!\n\n\n');
-        fwrite(src, data);
-%         fprintf('let''s start scanning\n');
+        if ~SCAN.flagRun
+%             fprintf('\n\n\nClick START(paused) now, if not clicked yet!\n\n\n');
+            fprintf('\n\n\nForgot to click START(paused)!!\nAbort the experiment from mpep and start again\n\n\n');
+            load train;
+            sound(y, Fs);
+            pause(5);
+        end
         pause(ExpStartDelay);
+%         fprintf('let''s start scanning\n');
         SCAN.flagPause = 0;
+        fwrite(src, data);
         
     case {'ExpEnd', 'ExpInterrupt'}
         % abort loop, if not aborted yet

@@ -22,7 +22,7 @@ function varargout = fusiWorkaround(varargin)
 
 % Edit the above text to modify the response to help fusiWorkaround
 
-% Last Modified by GUIDE v2.5 04-Oct-2017 16:06:21
+% Last Modified by GUIDE v2.5 12-Dec-2018 16:49:32
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -52,9 +52,15 @@ function fusiWorkaround_OpeningFcn(hObject, eventdata, handles, varargin)
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to fusiWorkaround (see VARARGIN)
 
+global SCAN
 % Choose default command line output for fusiWorkaround
 handles.output = hObject;
 
+p = dat.paths;
+handles.textLocal.String = sprintf('Local repo: %s', p.localRepository);
+handles.textFull.String = sprintf('Full data: %s', SCAN.folderFullData);
+handles.saveBF = handles.checkBF.Value;
+handles.saveBFFilt = handles.checkBFFilt.Value;
 % Update handles structure
 guidata(hObject, handles);
 
@@ -79,10 +85,38 @@ function RUN_pushbutton_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-
 global SCAN
-po = procObj;
+
+po = procObj(handles);
 set(hObject, 'Enable', 'off', 'String', 'Running...');
+handles.checkBF.Enable = 'off';
+handles.checkBFFilt.Enable = 'off';
 SCAN.FilmDoppler(SCAN.Nimag, SCAN.periodFilm, 'LQ', po);
 set(hObject, 'Enable', 'on', 'String', 'START (paused)');
+handles.checkBF.Enable = 'on';
+handles.checkBFFilt.Enable = 'on';
 
+
+% --- Executes on button press in checkBF.
+function checkBF_Callback(hObject, eventdata, handles)
+% hObject    handle to checkBF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkBF
+
+handles.saveBF = hObject.Value ~= 0;
+guidata(hObject, handles);
+
+
+
+% --- Executes on button press in checkBFFilt.
+function checkBFFilt_Callback(hObject, eventdata, handles)
+% hObject    handle to checkBFFilt (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of checkBFFilt
+
+handles.saveBFFilt = hObject.Value ~= 0;
+guidata(hObject, handles);

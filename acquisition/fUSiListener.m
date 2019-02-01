@@ -1,5 +1,7 @@
 %% udp testing script
 
+global SCAN
+SCAN.folderFullData = 'Z:\fUSiFullData';
 rig=RigInfoGet;
 
 % echoudp('on',1001)
