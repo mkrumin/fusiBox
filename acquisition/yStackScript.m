@@ -11,8 +11,8 @@ motorObj = stpMotor('COM1');
 fUSiListener;
 
 %% 
-animalName = 'Adaptee_1';
-yy = 0:0.1:5.5;
+animalName = 'CR010';
+yy = 0:0.1:3.5;
 
 %% This is for older slow fUSi
 acquireYStack_old(animalName, yy, SCAN, motorObj);
