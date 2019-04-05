@@ -55,7 +55,16 @@ classdef YStack < handle
             obj.boundingBox.z = [zMin, zMax];
         end
         
-        function hFig = plotVolume(obj)
+        function hFig = plotVolume(obj, hAxis, alphaPower, azel)
+            if nargin < 2
+                hAxis = [];
+            end
+            if nargin < 3
+                alphaPower = 2.5;
+            end
+            if nargin < 4
+                azel = [];
+            end
             xLimits = obj.boundingBox.x;
             zLimits = obj.boundingBox.z;
             xIdx = obj.xAxis >= xLimits(1) & obj.xAxis <= xLimits(2);
@@ -73,10 +82,14 @@ classdef YStack < handle
             dY = diff(yy(1:2));
             dZ = diff(zz(1:2));
             stack = imgaussfilt3(stack, 0.05./[dX, dY, dZ]);
-            alphaPower = 2.5;
-            hFig = figure('Name', obj.ExpRef);
             
-            ax = subplot(1, 1, 1);
+            if isempty(hAxis)
+                hFig = figure('Name', obj.ExpRef);
+                ax = subplot(1, 1, 1);
+            else
+                hFig = hAxis.Parent;
+                ax = hAxis;
+            end
             hSlice = slice(X, Y, Z, stack, xx, yy, zz, 'linear');
             [cMinMax] = prctile(stack(:), [0.1 99]);
             caxis(cMinMax);
@@ -103,12 +116,34 @@ classdef YStack < handle
             ax.DataAspectRatio = [1 1 1];
             ax.CameraViewAngle = 9;
             ax.ZDir = 'reverse';
-            view(ax, -30, 20);
+            if isempty(azel)
+                view(ax, -30, 20);
+            else
+                view(ax, azel(1), azel(2));
+            end
             axis(ax, 'tight');
             ax.XLabel.String = 'ML [mm]';
             ax.YLabel.String = 'AP [mm]';
             ax.ZLabel.String = 'DV [mm]';
-            title(ax, strrep(obj.ExpRef, '_', '\_'));
+            if isempty(hAxis)
+                title(ax, strrep(obj.ExpRef, '_', '\_'));
+            end
+            
+        end
+        
+        function hFig = plotVolumeMultiple(obj, alphaPower)
+            if nargin < 2
+                alphaPower = 2.5;
+            end
+            hFig = figure('Name', obj.ExpRef);
+            az = [-30 0 30];
+            el = [40 20];
+            [ell, azz] = meshgrid(el, az);
+            azel = [azz(:), ell(:)];
+            for iPlot = 1:length(azz(:))
+                ax = subplot(length(el), length(az), iPlot);
+                obj.plotVolume(ax, alphaPower, azel(iPlot, :));
+            end
             
         end
         
