@@ -52,4 +52,9 @@ if exist(fullDataFolderName, 'dir')
 end
 toc
 %%
-save(fullFileName, 'doppler', '-v6')
+try
+    save(fullFileName, 'doppler', '-v6')
+catch
+    % for large files
+    save(fullFileName, 'doppler', '-v7.3')
+end
