@@ -28,7 +28,7 @@ classdef YStack < handle
             obj.boundingBox.z = [min(obj.zAxis), max(obj.zAxis)];
         end
         
-        function getBoundingBox(obj)
+        function setBoundingBox(obj)
             h = figure;
             data = max(obj.Doppler, [], 3);
             data = sqrt(data);
@@ -37,7 +37,10 @@ classdef YStack < handle
             colormap hot
             caxis(prctile(data(:), [1 99]));
             title('Draw a rectangle surrounding the brain, then double click it');
-            hRect = imrect(gca);
+            xminmax = obj.boundingBox.x;
+            zminmax = obj.boundingBox.z;
+            ic = [xminmax(1), zminmax(1), diff(xminmax), diff(zminmax)];
+            hRect = imrect(gca, ic);
             pos = wait(hRect);
             delete(hRect);
             [~, ind] = min(abs(obj.xAxis - pos(1)));
