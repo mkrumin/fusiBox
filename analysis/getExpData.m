@@ -1,14 +1,37 @@
 function out = getExpData(ExpRef)
 
-p = getMpepProtocol(ExpRef);
+try
+    p = getMpepProtocol(ExpRef);
+catch e
+    warning('Couldn''t load the mpep protocol file:\n%s\n', e.message);
+    p = [];
+end
 
-hwInfo = getHardwareInfo(ExpRef);
+try
+    hwInfo = getHardwareInfo(ExpRef);
+catch e
+    warning('Couldn''t load hardwareInfo file:\n%s\n', e.message);
+    hwInfo = [];
+end
 
-stim = getStimTextures(hwInfo, p.pars, p.xfile);
+try
+    stim = getStimTextures(hwInfo, p.pars, p.xfile);
+catch e
+    warning('Couldn''t get stim textures:\n%s\n', e.message);
+    stim = [];
+end
 % converting from cell array to a 3D matrix
 % stimTextures = cell2mat(reshape(stim{1}.stimTextures(stim{1}.textureSequence), 1, 1, length(stim{1}.textureSequence)));
+
 Timeline = getTimeline(ExpRef);
-[stimTimes, frameTimes] = getStimTimes(Timeline, p);
+
+try
+    [stimTimes, frameTimes] = getStimTimes(Timeline, p);
+catch e
+    warning('Couldn''t get stim times:\n%s\n', e.message);
+    stimTimes = [];
+    frameTimes = [];
+end
 
 doppler = getDoppler(ExpRef);
 
@@ -36,6 +59,7 @@ nFramesAcquired = length(fusiFrameTimes);
 nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
 doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
 doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
+doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
 
 try
 eyeFilename = dat.expFilePath(ExpRef, 'eyetracking');
@@ -60,11 +84,11 @@ out.p = p; % mpep Protocol
 out.hwInfo = hwInfo; % hardware info for the stimulus monitors
 out.stim = stim; % stimulus textures
 out.TL = Timeline;
-out.stimTimes = stimTimes; % onsets and offsent of the stimuli
-out.stimFrameTimes = frameTimes; % timeStmps of the stimulus frames
+out.stimTimes = stimTimes; % onsets and offsets of the stimuli
+out.stimFrameTimes = frameTimes; % timeStamps of the stimulus frames
 out.doppler = doppler; % fUSi data
 out.fusiFrameOnsets = fusiFrameOnsets; % onset timestamps of fUSi frames
-out.fusiFrameDuration = fusiFrameDuration; % duration of eack fSUi frame
-out.fusiFrameTimes = fusiFrameTimes; % timestamps of the 'middle' of the fUSi frames
+out.fusiFrameDuration = fusiFrameDuration; % duration of each fUSi frame
+out.fusiFrameTimes = fusiFrameTimes; % timestamps of the 'middles' of the fUSi frames
 out.eyeMovie = eyeMovie; % VideoReader object of the eye movie
 out.eyeTimes = eyeTimes; % timestamps of the eye movie
