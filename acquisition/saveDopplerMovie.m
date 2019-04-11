@@ -26,35 +26,36 @@ doppler.dtSinglePlanewave = dt(2);
 doppler.dtRF = dt(3);
 doppler.params = getParameters(obj);
 
-%%
-tic
-p = dat.paths;
-fullDataFolderName = strrep(folderName, p.localRepository, obj.folderFullData);
-if exist(fullDataFolderName, 'dir')
-    fprintf('Binning BFFilt data:\n');
-    files = dir(fullfile(fullDataFolderName, [obj.experimentName, '_BFfilt_*.mat']));
-    fastFrames = cell(nFrames, 1);
-    binSize = 30;
-    nChars = 0;
-    for iFile = 1:length(files)
-        fprintf(repmat('\b', 1, nChars));
-        nChars = fprintf('Frame %g/%g', iFile, length(files));
-        iFrame = sscanf(files(iFile).name, [obj.experimentName, '_BFfilt_%u.mat']);
-        tmp = load(fullfile(fullDataFolderName, files(iFile).name));
-        dat2 = abs(tmp.BFFilt).^2;
-        [~, nZ, nX] = size(dat2);
-        fastFrames{iFrame} = ...
-            squeeze(mean(reshape(permute(dat2, [2 3 1]), nZ, nX, binSize, []), 3));
-    end
-    fprintf('\n');
-    doppler.fastFrames = fastFrames;
-    doppler.dtFastFrames = doppler.dtBF * binSize;
-end
-toc
-%%
-try
-    save(fullFileName, 'doppler', '-v6')
-catch
-    % for large files
-    save(fullFileName, 'doppler', '-v7.3')
-end
+%% binning BF data (commented out because takes too long to run during the experiment, moved to binBF.m)
+
+% tic
+% p = dat.paths;
+% fullDataFolderName = strrep(folderName, p.localRepository, obj.folderFullData);
+% if exist(fullDataFolderName, 'dir')
+%     fprintf('Binning BFFilt data:\n');
+%     files = dir(fullfile(fullDataFolderName, [obj.experimentName, '_BFfilt_*.mat']));
+%     fastFrames = cell(nFrames, 1);
+%     binSize = 30;
+%     nChars = 0;
+%     for iFile = 1:length(files)
+%         fprintf(repmat('\b', 1, nChars));
+%         nChars = fprintf('Frame %g/%g', iFile, length(files));
+%         iFrame = sscanf(files(iFile).name, [obj.experimentName, '_BFfilt_%u.mat']);
+%         tmp = load(fullfile(fullDataFolderName, files(iFile).name));
+%         dat2 = abs(tmp.BFFilt).^2;
+%         [~, nZ, nX] = size(dat2);
+%         fastFrames{iFrame} = ...
+%             squeeze(mean(reshape(permute(dat2, [2 3 1]), nZ, nX, binSize, []), 3));
+%     end
+%     fprintf('\n');
+%     doppler.fastFrames = fastFrames;
+%     doppler.dtFastFrames = doppler.dtBF * binSize;
+% end
+% toc
+
+%% saving
+% We need the '-v7.3' for large files
+tic;
+fprintf('Saving the data to %s ..', fullFileName);
+save(fullFileName, 'doppler', '-v7.3')
+fprintf('.done (%3.1f seconds)\n', toc);
