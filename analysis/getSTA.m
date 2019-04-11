@@ -1,4 +1,4 @@
-function sta = getSTA(t, mov,dataIn)
+function sta = getSTA(t, mov, dataIn)
 
 stimTimes = dataIn.stimTimes;
 [nStims, nRepeats] = size(stimTimes);
