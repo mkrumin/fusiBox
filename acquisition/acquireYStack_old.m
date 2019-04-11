@@ -39,9 +39,9 @@ for iY = 1:nY
 
     figure(hFig);
     subplot(nRows, nColumns, iY);
-    im = sqrt(mean(yStackDoppler(:,:,:,iY), 3));
+    im = sqrt(min(yStackDoppler(:,:,:,iY), [], 3));
     imagesc(xAxisDop, zAxisDop, im);
-    caxis(prctile(im(:), [1 99.7]));
+    caxis(prctile(im(:), [1 99]));
     colormap hot;
     axis equal tight
     title(sprintf('y = %4.2f', yCoords(iY)));
