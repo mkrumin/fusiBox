@@ -91,7 +91,8 @@ po = procObj(handles);
 set(hObject, 'Enable', 'off', 'String', 'Running...');
 handles.checkBF.Enable = 'off';
 handles.checkBFFilt.Enable = 'off';
-SCAN.FilmDoppler(SCAN.Nimag, SCAN.periodFilm, 'LQ', po);
+nFrames = ceil(7200/SCAN.periodFilm); % nFrames for two hour recording
+SCAN.FilmDoppler(max(SCAN.Nimag, nFrames), SCAN.periodFilm, 'LQ', po);
 set(hObject, 'Enable', 'on', 'String', 'START (paused)');
 handles.checkBF.Enable = 'on';
 handles.checkBFFilt.Enable = 'on';
