@@ -1,6 +1,7 @@
 function [eta, tAxis] = getETA(t, mov, eventTimes)
 
-fprintf('Calculating getETA..')
+tStart = tic;
+fprintf('Calculating getETA ()..')
 [nZ, nX, nFrames] = size(mov);
 
 dt = 0.05; % this is the target dt after upsampling/interpolation
@@ -17,4 +18,4 @@ for iT = 1:nT
 end
 
 eta = reshape(eta', nZ, nX, nT);
-fprintf('.done\n')
+fprintf('.done (%1.0f seconds)\n', toc(tStart))
