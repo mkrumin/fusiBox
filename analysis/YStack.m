@@ -28,7 +28,7 @@ classdef YStack < handle
             obj.boundingBox.z = [min(obj.zAxis), max(obj.zAxis)];
         end
         
-        function setBoundingBox(obj)
+        function h = setBoundingBox(obj)
             h = figure;
             data = max(obj.Doppler, [], 3);
             data = sqrt(data);
