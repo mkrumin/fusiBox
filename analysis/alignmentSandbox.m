@@ -1,17 +1,13 @@
-animalName = 'CR013_DRI2';
+animalName = 'PC036';
 
-stacksList = getAllStacks(animalName);
-nStacks = length(stacksList);
-clear st;
+br = Brain(animalName);
+
+nStacks = length(br.yStacks);
+%%
 for iStack = 1:nStacks
-    st(iStack) = YStack(stacksList{iStack});
+    br.yStacks(iStack).autoCrop(true);
 end
 
 %%
-for iStack = 1:nStacks
-    st(iStack).plotVolume;
-    st(iStack).plotSlices;
-end
 
-%%
-    
+alignStacks(br.yStacks(3), br.yStacks(6));
