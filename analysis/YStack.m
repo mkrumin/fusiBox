@@ -124,7 +124,6 @@ classdef YStack < handle
                 plot([xMin, xMin], ylim, 'g--');
                 plot([xMax, xMax], ylim, 'g--');
             end
-            
         end
         
         function hFig = plotVolume(obj, hAxis, alphaPower, azel)
@@ -281,6 +280,16 @@ classdef YStack < handle
                 drawnow;
                 F(iFrame) = getframe(h);
             end
+        end
+        
+        function data = getDoppler(obj)
+            xIdx = obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2);
+            zIdx = obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2);
+            yIdx = obj.yAxis >= obj.boundingBox.y(1) & obj.yAxis <= obj.boundingBox.y(2);
+            data.doppler = obj.Doppler(zIdx, xIdx, yIdx);
+            data.xAxis = obj.xAxis(xIdx);
+            data.yAxis = obj.yAxis(yIdx);
+            data.zAxis = obj.zAxis(zIdx);
         end
     end
 end
