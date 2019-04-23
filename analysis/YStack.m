@@ -1,4 +1,4 @@
-classdef YStack < handle
+classdef YStack < handle & matlab.mixin.Copyable
     
     properties
         ExpRef = '';
@@ -239,7 +239,7 @@ classdef YStack < handle
             
             data = (obj.Doppler(zIdx, xIdx, :));
             data = sqrt(data);
-            cminmax = prctile(data(:), [0.01 99]);
+            cminmax = prctile(data(:), [1 99]);
             hFig = figure('Name', obj.ExpRef);
             for iSlice = 1:nSlices
                 ax = subplot(nRows, nColumns, iSlice);
