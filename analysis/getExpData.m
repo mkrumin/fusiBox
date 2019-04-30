@@ -3,21 +3,28 @@ function out = getExpData(ExpRef)
 try
     p = getMpepProtocol(ExpRef);
 catch e
-    warning('Couldn''t load the mpep protocol file:\n%s\n', e.message);
+    warning(e.identifier, 'Couldn''t load the mpep protocol file:\n%s\n', e.message);
     p = [];
+    try
+        [block, pars] = getBlockAndPars(ExpRef);
+    catch e
+        warning(e.identifier, 'Also couldn''t load the block file and/or the parameters:\n%s\n', e.message);
+        block = [];
+        pars = [];
+    end
 end
 
 try
     hwInfo = getHardwareInfo(ExpRef);
 catch e
-    warning('Couldn''t load hardwareInfo file:\n%s\n', e.message);
+    warning(e.identifier, 'Couldn''t load hardwareInfo file:\n%s\n', e.message);
     hwInfo = [];
 end
 
 try
     stim = getStimTextures(hwInfo, p.pars, p.xfile);
 catch e
-    warning('Couldn''t get stim textures:\n%s\n', e.message);
+    warning(e.identifier, 'Couldn''t get stim textures of an mpep experiment:\n%s\n', e.message);
     stim = [];
 end
 % converting from cell array to a 3D matrix
@@ -81,6 +88,8 @@ catch e
 end
 
 out.p = p; % mpep Protocol
+out.block = block; % block-file of the mc/expServer-style experiment
+out.pars = pars; % parameters of the mc/expServer experiment
 out.hwInfo = hwInfo; % hardware info for the stimulus monitors
 out.stim = stim; % stimulus textures
 out.TL = Timeline;
