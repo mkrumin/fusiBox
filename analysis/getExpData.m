@@ -2,13 +2,15 @@ function out = getExpData(ExpRef)
 
 try
     p = getMpepProtocol(ExpRef);
+    isMpep = true;
 catch e
-    warning(e.identifier, 'Couldn''t load the mpep protocol file:\n%s\n', e.message);
     p = [];
+    isMpep = false;
     try
         [block, pars] = getBlockAndPars(ExpRef);
-    catch e
-        warning(e.identifier, 'Also couldn''t load the block file and/or the parameters:\n%s\n', e.message);
+    catch e2
+        warning(e.identifier, 'Couldn''t load the mpep protocol file:\n%s\n', e.message);
+        warning(e2.identifier, 'Also couldn''t load the block file and/or the parameters:\n%s\n', e2.message);
         block = [];
         pars = [];
     end
@@ -21,23 +23,37 @@ catch e
     hwInfo = [];
 end
 
-try
-    stim = getStimTextures(hwInfo, p.pars, p.xfile);
-catch e
-    warning(e.identifier, 'Couldn''t get stim textures of an mpep experiment:\n%s\n', e.message);
-    stim = [];
-end
-% converting from cell array to a 3D matrix
-% stimTextures = cell2mat(reshape(stim{1}.stimTextures(stim{1}.textureSequence), 1, 1, length(stim{1}.textureSequence)));
-
 Timeline = getTimeline(ExpRef);
 
-try
-    [stimTimes, frameTimes] = getStimTimes(Timeline, p);
-catch e
-    warning('Couldn''t get stim times:\n%s\n', e.message);
-    stimTimes = [];
-    frameTimes = [];
+stim = [];
+stimTimes = [];
+frameTimes = [];
+stimSeq = [];
+if isMpep
+    try
+        stim = getStimTextures(hwInfo, p.pars, p.xfile);
+    catch e
+        warning(e.identifier, 'Couldn''t get stim textures of an mpep experiment:\n%s\n', e.message);
+    end
+    % converting from cell array to a 3D matrix
+    % stimTextures = cell2mat(reshape(stim{1}.stimTextures(stim{1}.textureSequence), 1, 1, length(stim{1}.textureSequence)));
+    
+    try
+        [stimTimes, frameTimes] = getStimTimes(Timeline, p);
+    catch e
+        warning(e.identifier, 'Couldn''t get mpep/tlvs stim times:\n%s\n', e.message);
+    end
+    
+else
+    filename = dat.expFilePath(ExpRef, 'block', 'master');
+    filename = strrep(filename, '_Block.mat', '_ProcBlock.mat');
+    try
+        d = load(filename);
+        stimTimes = d.fus;
+        stimSeq = d.blk;
+    catch e
+        warning(e.identifier, 'Couldn''t get preprocessed stim times from ''_ProcBlock'' file:\n%s\n', e.message);
+    end
 end
 
 doppler = getDoppler(ExpRef);
@@ -69,13 +85,13 @@ doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
 doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
 
 try
-eyeFilename = dat.expFilePath(ExpRef, 'eyetracking');
-if exist([eyeFilename{1}, '.mj2'], 'file')
-    eyeFilename = [eyeFilename{1}, '.mj2'];
-else
-    eyeFilename = [eyeFilename{2}, '.mj2'];
-end
-eyeMovie = VideoReader(eyeFilename);
+    eyeFilename = dat.expFilePath(ExpRef, 'eyetracking');
+    if exist([eyeFilename{1}, '.mj2'], 'file')
+        eyeFilename = [eyeFilename{1}, '.mj2'];
+    else
+        eyeFilename = [eyeFilename{2}, '.mj2'];
+    end
+    eyeMovie = VideoReader(eyeFilename);
 catch e
     fprintf('There was a problem getting the eye-camera video: %s\n', e.message)
     eyeMovie = [];
@@ -95,6 +111,7 @@ out.stim = stim; % stimulus textures
 out.TL = Timeline;
 out.stimTimes = stimTimes; % onsets and offsets of the stimuli
 out.stimFrameTimes = frameTimes; % timeStamps of the stimulus frames
+out.stimSequence = stimSeq; % sequence of stimuli for mc/expServer experiment
 out.doppler = doppler; % fUSi data
 out.fusiFrameOnsets = fusiFrameOnsets; % onset timestamps of fUSi frames
 out.fusiFrameDuration = fusiFrameDuration; % duration of each fUSi frame
