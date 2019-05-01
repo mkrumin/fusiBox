@@ -8,6 +8,7 @@ classdef YStack < handle & matlab.mixin.Copyable
         boundingBox = struct('x', [], 'y', [], 'z', []);
         Doppler = [];
         BMode = [];
+        fusi; % array of related Fus objects
     end
     
     methods
@@ -68,7 +69,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             xProjection = imgaussfilt(median(data, 1), 1);
             zProjection = imgaussfilt(median(data, 2), 1.2);
             xThreshold = min(xProjection(:)) + 0.2 * (max(xProjection(:)) - min(xProjection(:)));
-            zThreshold = min(zProjection(:)) + 0.1 * (max(zProjection(:)) - min(zProjection(:)));
+            zThreshold = min(zProjection(:)) + 0.05 * (max(zProjection(:)) - min(zProjection(:)));
             % using imfill to find a region around the maximum, which is
             % all above threshold
             [~, xMaxLoc] = max(xProjection(:));
@@ -290,6 +291,15 @@ classdef YStack < handle & matlab.mixin.Copyable
             data.xAxis = obj.xAxis(xIdx);
             data.yAxis = obj.yAxis(yIdx);
             data.zAxis = obj.zAxis(zIdx);
+        end
+        
+        function addFus(obj, ExpRef)
+            if isempty(obj.fusi)
+                obj.fusi = Fus(ExpRef, obj);
+            else
+                nFusNow = length(obj.fusi);
+                obj.fusi(nFusNow + 1) = Fus(ExpRef, obj);
+            end
         end
     end
 end
