@@ -3,6 +3,8 @@ function out = getExpData(ExpRef)
 try
     p = getMpepProtocol(ExpRef);
     isMpep = true;
+    block = [];
+    pars = [];
 catch e
     p = [];
     isMpep = false;
