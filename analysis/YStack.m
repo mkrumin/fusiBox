@@ -1,4 +1,4 @@
-classdef YStack < handle
+classdef YStack < handle & matlab.mixin.Copyable
     
     properties
         ExpRef = '';
@@ -8,6 +8,7 @@ classdef YStack < handle
         boundingBox = struct('x', [], 'y', [], 'z', []);
         Doppler = [];
         BMode = [];
+        fusi; % array of related Fus objects
     end
     
     methods
@@ -26,9 +27,10 @@ classdef YStack < handle
             obj.boundingBox.x = [min(obj.xAxis), max(obj.xAxis)];
             obj.boundingBox.y = [min(obj.yAxis), max(obj.yAxis)];
             obj.boundingBox.z = [min(obj.zAxis), max(obj.zAxis)];
+            obj.autoCrop;
         end
         
-        function h = setBoundingBox(obj)
+        function h = manualCrop(obj)
             h = figure;
             data = max(obj.Doppler, [], 3);
             data = sqrt(data);
@@ -56,6 +58,73 @@ classdef YStack < handle
             title('This will be the bounding box for this stack');
             obj.boundingBox.x = [xMin, xMax];
             obj.boundingBox.z = [zMin, zMax];
+        end
+        
+        function autoCrop(obj, doPlotting)
+            if nargin < 2
+                doPlotting = false;
+            end
+            data = max(obj.Doppler, [], 3);
+            data = sqrt(data);
+            xProjection = imgaussfilt(median(data, 1), 1);
+            zProjection = imgaussfilt(median(data, 2), 1.2);
+            xThreshold = min(xProjection(:)) + 0.2 * (max(xProjection(:)) - min(xProjection(:)));
+            zThreshold = min(zProjection(:)) + 0.05 * (max(zProjection(:)) - min(zProjection(:)));
+            % using imfill to find a region around the maximum, which is
+            % all above threshold
+            [~, xMaxLoc] = max(xProjection(:));
+            xIdx = imfill(xProjection < xThreshold, xMaxLoc) - (xProjection < xThreshold);
+            xMinInd = find(xIdx, 1, 'first');
+            xMin = obj.xAxis(xMinInd);
+            xMaxInd = find(xIdx, 1, 'last');
+            xMax = obj.xAxis(xMaxInd);
+            [~, zMaxLoc] = max(zProjection(:));
+            zIdx = imfill(zProjection < zThreshold, zMaxLoc) - (zProjection < zThreshold);
+            zMinInd = find(zIdx, 1, 'first');
+            zMin = obj.zAxis(zMinInd);
+            zMaxInd = find(zIdx, 1, 'last');
+            zMax = obj.zAxis(zMaxInd);
+            
+%             This older version finding the first and last threshold crossings
+%             fails if there are some artefacts near the edgesversion
+%             xMinInd = find(xProjection > xThreshold, 1, 'first');
+%             xMin = obj.xAxis(xMinInd);
+%             xMaxInd = find(xProjection > xThreshold, 1, 'last');
+%             xMax = obj.xAxis(xMaxInd);
+%             zMinInd = find(zProjection > zThreshold, 1, 'first');
+%             zMin = obj.zAxis(zMinInd);
+%             zMaxInd = find(zProjection > zThreshold, 1, 'last');
+%             zMax = obj.zAxis(zMaxInd);
+
+            obj.boundingBox.x = [xMin, xMax];
+            obj.boundingBox.z = [zMin, zMax];
+            
+            % plotting below is for for debugging
+            if doPlotting
+                figure;
+                subplot(2, 2, 2)
+                imagesc(obj.xAxis, obj.zAxis, data);
+                axis equal tight;
+                colormap hot
+                caxis(prctile(data(:), [1 99]));
+                hold on;
+                rectangle(gca, 'Position', [xMin, zMin, xMax-xMin, zMax-zMin], 'EdgeColor', 'w', 'LineWidth', 2);
+                subplot(2, 2, 1);
+                plot(zProjection, obj.zAxis);
+                hold on;
+                axis tight ij
+                set(gca, 'XDir', 'reverse');
+                plot([zThreshold, zThreshold], ylim, 'r--');
+                plot(xlim, [zMin, zMin], 'g--');
+                plot(xlim, [zMax, zMax], 'g--');
+                subplot(2, 2, 4);
+                plot(obj.xAxis, xProjection);
+                hold on;
+                axis tight
+                plot(xlim, [xThreshold, xThreshold], 'r--');
+                plot([xMin, xMin], ylim, 'g--');
+                plot([xMax, xMax], ylim, 'g--');
+            end
         end
         
         function hFig = plotVolume(obj, hAxis, alphaPower, azel)
@@ -171,7 +240,7 @@ classdef YStack < handle
             
             data = (obj.Doppler(zIdx, xIdx, :));
             data = sqrt(data);
-            cminmax = prctile(data(:), [0.01 99]);
+            cminmax = prctile(data(:), [1 99]);
             hFig = figure('Name', obj.ExpRef);
             for iSlice = 1:nSlices
                 ax = subplot(nRows, nColumns, iSlice);
@@ -200,7 +269,7 @@ classdef YStack < handle
             % switching off axis, labels, and title
             axis off tight;
             ax.Title.Visible = 'off';
-%             ax.CameraTargetMode = 'manual';
+            %             ax.CameraTargetMode = 'manual';
             azimuth = -30 + [0:1:359];
             nFrames = length(azimuth);
             view(ax, azimuth(1), 20)
@@ -211,6 +280,25 @@ classdef YStack < handle
                 view(ax, azimuth(iFrame), 20)
                 drawnow;
                 F(iFrame) = getframe(h);
+            end
+        end
+        
+        function data = getDoppler(obj)
+            xIdx = obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2);
+            zIdx = obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2);
+            yIdx = obj.yAxis >= obj.boundingBox.y(1) & obj.yAxis <= obj.boundingBox.y(2);
+            data.doppler = obj.Doppler(zIdx, xIdx, yIdx);
+            data.xAxis = obj.xAxis(xIdx);
+            data.yAxis = obj.yAxis(yIdx);
+            data.zAxis = obj.zAxis(zIdx);
+        end
+        
+        function addFus(obj, ExpRef)
+            if isempty(obj.fusi)
+                obj.fusi = Fus(ExpRef, obj);
+            else
+                nFusNow = length(obj.fusi);
+                obj.fusi(nFusNow + 1) = Fus(ExpRef, obj);
             end
         end
     end
