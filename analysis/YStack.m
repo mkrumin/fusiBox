@@ -302,6 +302,22 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
         end
         
+        function getOutliers(obj, nMAD)
+            for iFus = 1:length(obj.fusi)
+                if nargin < 2
+                    obj.fusi(iFus).getOutliers;
+                else
+                    obj.fusi(iFus).getOutliers(nMAD);
+                end
+            end
+        end
+        
+        function getdII(obj)
+            for iFus = 1:length(obj.fusi)
+                obj.fusi(iFus).getdII;
+            end
+        end
+        
         function getRetinotopy(obj)
             % figure out which of the experiments is Kalatsky
             protocols = {obj.fusi.protocol};
