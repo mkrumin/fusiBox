@@ -27,6 +27,7 @@ fusDates = dateList(isFus);
 
 for iStack = 1:length(stackList)
     expSummary(iStack).expDate = stackDates(iStack);
+    expSummary(iStack).expDateStr = datestr(stackDates(iStack), 'dd-mmm-YYYY');
     expSummary(iStack).stackRef = stackList{iStack};
     expSummary(iStack).fusRef = fusList(ismember(fusDates, stackDates(iStack)));
     
