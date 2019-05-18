@@ -69,8 +69,8 @@ classdef Fus < handle
             idxX = obj.xAxis >= obj.yStack.boundingBox.x(1) & obj.xAxis <= obj.yStack.boundingBox.x(2);
             idxZ = obj.zAxis >= obj.yStack.boundingBox.z(1) & obj.zAxis <= obj.yStack.boundingBox.z(2);
 
-            prcThresh = 99;
-            if nargin<1
+            prcThresh = 95;
+            if nargin<2
                 nMAD = 3;
             end
             
@@ -155,5 +155,23 @@ classdef Fus < handle
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
 
+        function F = movie(obj)
+            idx = ~obj.outlierFrameIdx;
+            mov = (obj.dII(:,:,idx));
+            mov =  mov - rmSVD(mov, 100);
+            mov = imgaussfilt3(mov, [1 1 0.5]);
+            nFrames = sum(idx);
+            clim = prctile(mov(:), [1 99.9]);
+            hFig = figure;
+            colormap hot;
+            for iFrame = 1:nFrames
+                imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
+                title(sprintf('%g/%g', iFrame, nFrames))
+                caxis(clim);
+                axis off;
+                drawnow;
+                F(iFrame) = getframe(hFig);
+            end
+        end
     end
 end
