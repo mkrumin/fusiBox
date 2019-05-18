@@ -65,12 +65,14 @@ classdef Fus < handle
             obj.outlierFrameIdxFast = false(length(obj.tAxisFast), 1);
         end
         
-        function getOutliers(obj)
+        function getOutliers(obj, nMAD)
             idxX = obj.xAxis >= obj.yStack.boundingBox.x(1) & obj.xAxis <= obj.yStack.boundingBox.x(2);
             idxZ = obj.zAxis >= obj.yStack.boundingBox.z(1) & obj.zAxis <= obj.yStack.boundingBox.z(2);
 
             prcThresh = 99;
-            nMAD = 3;
+            if nargin<1
+                nMAD = 3;
+            end
             
             mov = obj.doppler(idxZ, idxX, :);
             meanFrame = mean(mov, 3);

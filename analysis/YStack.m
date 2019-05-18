@@ -301,5 +301,25 @@ classdef YStack < handle & matlab.mixin.Copyable
                 obj.fusi(nFusNow + 1) = Fus(ExpRef, obj);
             end
         end
+        
+        function getRetinotopy(obj)
+            % figure out which of the experiments is Kalatsky
+            protocols = {obj.fusi.protocol};
+            mpepID = find(~cellfun(@isempty, protocols));
+            isKalatsky = ismember({protocols{mpepID}.xfile}, 'stimKalatsky.x');
+            fusID = mpepID(isKalatsky);
+            % if not done already, perform the analyses
+            if isempty(obj.fusi(fusID).outlierFrameIdxFast)
+                obj.fusi(fusID).getOutliers(Inf);
+            end
+            if isempty(obj.fusi(fusID).dIIFast)
+                obj.fusi(fusID).getdII;
+            end
+            if isempty(obj.fusi(fusID).retinotopyMapsFast)
+                obj.fusi(fusID).getRetinotopy;
+            end
+            % plot retinotopy
+            obj.fusi(fusID).showRetinotopy;
+        end
     end
 end
