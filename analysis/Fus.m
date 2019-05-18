@@ -24,7 +24,11 @@ classdef Fus < handle
         eyeMovie = []; % VideoReader object of the eye movie
         eyeTimes = []; % timestamps of the eye movie frames
         outlierFrameIdx = [];
-        
+        outlierFrameIdxFast = [];
+        dII = []; % delta I/I0 of the doppler signal
+        dIIFast = []; % delta I/I0 of the fast doppler signal
+        retinotopyMaps;
+        retinotopyMapsFast;
     end
     
     methods
@@ -58,11 +62,15 @@ classdef Fus < handle
             obj.eyeMovie = data.eyeMovie;
             obj.eyeTimes = data.eyeTimes;
             obj.outlierFrameIdx = false(length(obj.tAxis), 1);
+            obj.outlierFrameIdxFast = false(length(obj.tAxisFast), 1);
         end
         
         function getOutliers(obj)
             idxX = obj.xAxis >= obj.yStack.boundingBox.x(1) & obj.xAxis <= obj.yStack.boundingBox.x(2);
             idxZ = obj.zAxis >= obj.yStack.boundingBox.z(1) & obj.zAxis <= obj.yStack.boundingBox.z(2);
+
+            prcThresh = 99;
+            nMAD = 5;
             
             mov = obj.doppler(idxZ, idxX, :);
             meanFrame = mean(mov, 3);
@@ -71,11 +79,23 @@ classdef Fus < handle
             
             [nZ, nX, nFrames] = size(mov);
             mov = reshape(mov, nZ*nX, nFrames);
-            prcThresh = 99;
             idxCV = cvFrame > prctile(cvFrame(:), prcThresh);
             trace = mean(mov(idxCV, :));
-            thr = median(trace) + 3*mad(trace, 1);
+            thr = median(trace) + nMAD*mad(trace, 1);
             obj.outlierFrameIdx = trace > thr;
+
+            mov = obj.dopplerFast(idxZ, idxX, :);
+            meanFrame = mean(mov, 3);
+            stdFrame = std(mov, [], 3);
+            cvFrame = stdFrame./meanFrame;
+            
+            [nZ, nX, nFrames] = size(mov);
+            mov = reshape(mov, nZ*nX, nFrames);
+            idxCV = cvFrame > prctile(cvFrame(:), prcThresh);
+            trace = mean(mov(idxCV, :));
+            thr = median(trace) + nMAD*mad(trace, 1);
+            obj.outlierFrameIdxFast = trace > thr;
+
         end
         
         function [mov, xx, zz, movFast] = getCroppedDoppler(obj)
@@ -96,5 +116,42 @@ classdef Fus < handle
             obj.xAxis = xx;
             obj.zAxis = zz;
         end
+        
+        function getdII(obj)
+            idx = ~obj.outlierFrameIdx;
+            I0 = median(obj.doppler(:, :, idx), 3);
+            obj.dII = bsxfun(@rdivide, bsxfun(@minus, obj.doppler, I0), I0);
+            idx = ~obj.outlierFrameIdxFast;
+            I0Fast = median(obj.dopplerFast(:, :, idx), 3);
+            obj.dIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.dopplerFast, I0Fast), I0Fast);
+        end
+        
+        function getRetinotopy(obj)
+            idx = ~obj.outlierFrameIdx;
+            stimPars = getStimPars(obj.protocol);
+            obj.retinotopyMaps = getPreferenceMaps(obj.dII(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
+            
+            idx = ~obj.outlierFrameIdxFast;
+            obj.retinotopyMapsFast = getPreferenceMaps(obj.dIIFast(:,:,idx), obj.tAxisFast(idx) + obj.dtFast/2, ...
+                obj.stimTimes, stimPars);
+        end
+
+        function showRetinotopy(obj, showHemoDelay, plotType)
+            if nargin < 2
+                showHemoDelay = false;
+            end
+            if nargin < 3
+                plotType = [];
+            end
+            stimPars = getStimPars(obj.protocol);
+            nStims = length(stimPars);
+            for iStim = 1:nStims
+                stimPars(iStim).xAxis = obj.xAxis;
+                stimPars(iStim).yAxis = obj.zAxis;
+            end
+            plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
+            plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
+        end
+
     end
 end

@@ -2,7 +2,8 @@ function maps = getPreferenceMaps(mov, frameTimes, stimTimes, p)
 
 [nStims, nRepeats] = size(stimTimes);
 [nz, nx, nt] = size(mov);
-movSVD = rmSVD(mov, 1);
+% movSVD = rmSVD(mov, 1);
+movSVD = mov;
 movFlat = permute(reshape(movSVD, nz*nx, nt), [2, 1]);
 
 %%
