@@ -70,7 +70,7 @@ classdef Fus < handle
             idxZ = obj.zAxis >= obj.yStack.boundingBox.z(1) & obj.zAxis <= obj.yStack.boundingBox.z(2);
 
             prcThresh = 99;
-            nMAD = 5;
+            nMAD = 3;
             
             mov = obj.doppler(idxZ, idxX, :);
             meanFrame = mean(mov, 3);
@@ -141,7 +141,7 @@ classdef Fus < handle
                 showHemoDelay = false;
             end
             if nargin < 3
-                plotType = [];
+                plotType = '';
             end
             stimPars = getStimPars(obj.protocol);
             nStims = length(stimPars);
@@ -149,7 +149,7 @@ classdef Fus < handle
                 stimPars(iStim).xAxis = obj.xAxis;
                 stimPars(iStim).yAxis = obj.zAxis;
             end
-            plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
+%             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
 
