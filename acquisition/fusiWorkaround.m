@@ -59,8 +59,12 @@ handles.output = hObject;
 p = dat.paths;
 handles.textLocal.String = sprintf('Local repo: %s', p.localRepository);
 handles.textFull.String = sprintf('Full data: %s', SCAN.folderFullData);
+handles.checkBFFilt.Value = 1;
 handles.saveBF = handles.checkBF.Value;
 handles.saveBFFilt = handles.checkBFFilt.Value;
+if handles.checkBF.Value || handles.checkBFFilt.Value
+    diskSpaceWarning;
+end
 % Update handles structure
 guidata(hObject, handles);
 
@@ -107,6 +111,9 @@ function checkBF_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkBF
 
 handles.saveBF = hObject.Value ~= 0;
+if hObject.Value
+    diskSpaceWarning;
+end
 guidata(hObject, handles);
 
 
@@ -120,4 +127,7 @@ function checkBFFilt_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of checkBFFilt
 
 handles.saveBFFilt = hObject.Value ~= 0;
+if hObject.Value
+    diskSpaceWarning;
+end
 guidata(hObject, handles);

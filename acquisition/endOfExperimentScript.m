@@ -1,5 +1,5 @@
-animalName = 'PC037';
-expDate = '2019-04-16';
+animalName = 'PC041';
+expDate = '2019-05-23';
 
 question = sprintf('Process data of %s for %s?', animalName, expDate);
 button = questdlg(question,'fUSi post exp script','OK','Cancel','Cancel');
@@ -60,7 +60,7 @@ tStart = tic;
 for iExp = 1:length(ExpRefs)
     binBF(ExpRefs{iExp});
 end
-fprintf('\nTotal time taken to bin BF: %1.0f seconds\n', toc(tStart));
+fprintf('\nTotal time taken to bin BF: %1.0f seconds\n\n', toc(tStart));
 
 %% copy files to server
 serverFolderName = fullfile(p.mainRepository, animalName, expDate);
