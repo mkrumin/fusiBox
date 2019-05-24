@@ -134,7 +134,9 @@ classdef Fus < handle
             obj.retinotopyMaps = getPreferenceMaps(obj.dII(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
             
             idx = ~obj.outlierFrameIdxFast;
-            obj.retinotopyMapsFast = getPreferenceMaps(obj.dIIFast(:,:,idx), obj.tAxisFast(idx) + obj.dtFast/2, ...
+            mov = obj.dIIFast(:,:,idx);
+            mov = mov - rmSVD(mov, 100);
+            obj.retinotopyMapsFast = getPreferenceMaps(mov, obj.tAxisFast(idx) + obj.dtFast/2, ...
                 obj.stimTimes, stimPars);
         end
 
@@ -155,13 +157,40 @@ classdef Fus < handle
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
 
+        function plotSVDs(obj, nSVDs)
+            nRows = floor(sqrt(nSVDs));
+            nColumns = ceil(nSVDs/nRows);
+            idx = ~obj.outlierFrameIdxFast;
+            mov = obj.doppler(:, :, :);
+            mov = mov - mean(mov, 3);
+%             mov = obj.dIIFast(:, :, idx);
+%             mov = imgaussfilt(mov, 2);
+            [nz, nx, nt] = size(mov);
+            mov = reshape(mov, nz*nx, nt);
+            [U, S, V] = svds(double(mov), nSVDs);
+            hFig = figure;
+            colormap hot;
+            Uframes = reshape(U, nz, nx, nSVDs);
+            sVals = diag(S);
+            for iPlot = 1:nSVDs
+                subplot(nRows, nColumns, iPlot)
+                imagesc(obj.xAxis, obj.zAxis, Uframes(:, :, iPlot));
+                clim = prctile(U(:, iPlot), [1 99]);
+                caxis(clim);
+                title(sprintf('sVal = %g', sVals(iPlot)));
+                axis equal tight;
+            end
+        end
+        
         function F = movie(obj)
-            idx = ~obj.outlierFrameIdx;
-            mov = (obj.dII(:,:,idx));
-            mov =  mov - rmSVD(mov, 100);
-            mov = imgaussfilt3(mov, [1 1 0.5]);
-            nFrames = sum(idx);
-            clim = prctile(mov(:), [1 99.9]);
+%             idx = ~obj.outlierFrameIdx;
+            mov = obj.doppler(:,:,:);
+%             mov = obj.dII(:,:,idx);
+            mov =  mov-rmSVD(mov, 100);
+%             mov = imgaussfilt3(mov, [1 1 0.5]);
+            mov = log(mov - min(mov(:)) + eps);
+            nFrames = size(mov, 3);
+            clim = prctile(mov(:), [0.01 99.99]);
             hFig = figure;
             colormap hot;
             for iFrame = 1:nFrames
@@ -170,7 +199,8 @@ classdef Fus < handle
                 caxis(clim);
                 axis off;
                 drawnow;
-                F(iFrame) = getframe(hFig);
+%                 pause(0.05);
+%                 F(iFrame) = getframe(hFig);
             end
         end
     end
