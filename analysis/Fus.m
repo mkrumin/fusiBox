@@ -52,7 +52,7 @@ classdef Fus < handle
             obj.tAxisFast = reshape(bsxfun(@plus, obj.tAxis, obj.dtFast*(0:nFastFrames - 1))', [], 1);
             obj.protocol = data.p;
             obj.block = data.block;
-            obj.pars = data.pars; 
+            obj.pars = data.pars;
             obj.TL = data.TL;
             obj.hwInfo = data.hwInfo;
             obj.stim = data.stim;
@@ -68,7 +68,7 @@ classdef Fus < handle
         function getOutliers(obj, nMAD)
             idxX = obj.xAxis >= obj.yStack.boundingBox.x(1) & obj.xAxis <= obj.yStack.boundingBox.x(2);
             idxZ = obj.zAxis >= obj.yStack.boundingBox.z(1) & obj.zAxis <= obj.yStack.boundingBox.z(2);
-
+            
             prcThresh = 95;
             if nargin<2
                 nMAD = 3;
@@ -85,7 +85,7 @@ classdef Fus < handle
             trace = mean(mov(idxCV, :));
             thr = median(trace) + nMAD*mad(trace, 1);
             obj.outlierFrameIdx = trace > thr;
-
+            
             mov = obj.dopplerFast(idxZ, idxX, :);
             meanFrame = mean(mov, 3);
             stdFrame = std(mov, [], 3);
@@ -97,7 +97,7 @@ classdef Fus < handle
             trace = mean(mov(idxCV, :));
             thr = median(trace) + nMAD*mad(trace, 1);
             obj.outlierFrameIdxFast = trace > thr;
-
+            
         end
         
         function [mov, xx, zz, movFast] = getCroppedDoppler(obj)
@@ -109,7 +109,7 @@ classdef Fus < handle
             if nargout > 3
                 movFast = obj.dopplerFast(idxZ, idxX, :);
             end
-        end            
+        end
         
         function hardCrop(obj)
             [mov, xx, zz, movFast] = getCroppedDoppler(obj);
@@ -139,7 +139,7 @@ classdef Fus < handle
             obj.retinotopyMapsFast = getPreferenceMaps(mov, obj.tAxisFast(idx) + obj.dtFast/2, ...
                 obj.stimTimes, stimPars);
         end
-
+        
         function showRetinotopy(obj, showHemoDelay, plotType)
             if nargin < 2
                 showHemoDelay = false;
@@ -153,18 +153,18 @@ classdef Fus < handle
                 stimPars(iStim).xAxis = obj.xAxis;
                 stimPars(iStim).yAxis = obj.zAxis;
             end
-%             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
+            %             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
-
+        
         function plotSVDs(obj, nSVDs)
             nRows = floor(sqrt(nSVDs));
             nColumns = ceil(nSVDs/nRows);
             idx = ~obj.outlierFrameIdxFast;
             mov = obj.doppler(:, :, :);
-            mov = mov - mean(mov, 3);
-%             mov = obj.dIIFast(:, :, idx);
-%             mov = imgaussfilt(mov, 2);
+            mov = mov - median(mov, 3);
+            %             mov = obj.dIIFast(:, :, idx);
+            %             mov = imgaussfilt(mov, 2);
             [nz, nx, nt] = size(mov);
             mov = reshape(mov, nz*nx, nt);
             [U, S, V] = svds(double(mov), nSVDs);
@@ -175,7 +175,8 @@ classdef Fus < handle
             for iPlot = 1:nSVDs
                 subplot(nRows, nColumns, iPlot)
                 imagesc(obj.xAxis, obj.zAxis, Uframes(:, :, iPlot));
-                clim = prctile(U(:, iPlot), [1 99]);
+                idx = U(:, iPlot) ~= 0;
+                clim = prctile(U(idx, iPlot), [1 99]);
                 caxis(clim);
                 title(sprintf('sVal = %g', sVals(iPlot)));
                 axis equal tight;
@@ -183,24 +184,30 @@ classdef Fus < handle
         end
         
         function F = movie(obj)
-%             idx = ~obj.outlierFrameIdx;
+            %             idx = ~obj.outlierFrameIdx;
             mov = obj.doppler(:,:,:);
-%             mov = obj.dII(:,:,idx);
-            mov =  mov-rmSVD(mov, 100);
-%             mov = imgaussfilt3(mov, [1 1 0.5]);
+            %             mov = obj.dII(:,:,idx);
+%             mov =  mov-rmSVD(mov, 200);
+            %             mov = imgaussfilt3(mov, [1 1 0.5]);
             mov = log(mov - min(mov(:)) + eps);
             nFrames = size(mov, 3);
-            clim = prctile(mov(:), [0.01 99.99]);
+            % calculate the clim not including the masked out regions
+            clim = prctile(mov(mov>min(mov(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
             for iFrame = 1:nFrames
-                imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
-                title(sprintf('%g/%g', iFrame, nFrames))
-                caxis(clim);
-                axis off;
+                if iFrame == 1
+                    im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
+                    tit = title(sprintf('%g/%g', iFrame, nFrames));
+                    caxis(clim);
+                    axis equal tight off;
+                else
+                    im.CData = mov(:,:,iFrame);
+                    tit.String = sprintf('%g/%g', iFrame, nFrames);
+                end
                 drawnow;
-%                 pause(0.05);
-%                 F(iFrame) = getframe(hFig);
+                %                 pause(0.05);
+                %                 F(iFrame) = getframe(hFig);
             end
         end
     end

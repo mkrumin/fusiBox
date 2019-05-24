@@ -6,6 +6,7 @@ classdef YStack < handle & matlab.mixin.Copyable
         zAxis = [];
         yAxis = [];
         boundingBox = struct('x', [], 'y', [], 'z', []);
+        mask = struct('y', [], 'bw', [], 'poly', []); % mask to be applied to functional data
         Doppler = [];
         BMode = [];
         fusi; % array of related Fus objects
@@ -85,17 +86,17 @@ classdef YStack < handle & matlab.mixin.Copyable
             zMaxInd = find(zIdx, 1, 'last');
             zMax = obj.zAxis(zMaxInd);
             
-%             This older version finding the first and last threshold crossings
-%             fails if there are some artefacts near the edgesversion
-%             xMinInd = find(xProjection > xThreshold, 1, 'first');
-%             xMin = obj.xAxis(xMinInd);
-%             xMaxInd = find(xProjection > xThreshold, 1, 'last');
-%             xMax = obj.xAxis(xMaxInd);
-%             zMinInd = find(zProjection > zThreshold, 1, 'first');
-%             zMin = obj.zAxis(zMinInd);
-%             zMaxInd = find(zProjection > zThreshold, 1, 'last');
-%             zMax = obj.zAxis(zMaxInd);
-
+            %             This older version finding the first and last threshold crossings
+            %             fails if there are some artefacts near the edgesversion
+            %             xMinInd = find(xProjection > xThreshold, 1, 'first');
+            %             xMin = obj.xAxis(xMinInd);
+            %             xMaxInd = find(xProjection > xThreshold, 1, 'last');
+            %             xMax = obj.xAxis(xMaxInd);
+            %             zMinInd = find(zProjection > zThreshold, 1, 'first');
+            %             zMin = obj.zAxis(zMinInd);
+            %             zMaxInd = find(zProjection > zThreshold, 1, 'last');
+            %             zMax = obj.zAxis(zMaxInd);
+            
             obj.boundingBox.x = [xMin, xMax];
             obj.boundingBox.z = [zMin, zMax];
             
@@ -324,18 +325,57 @@ classdef YStack < handle & matlab.mixin.Copyable
             mpepID = find(~cellfun(@isempty, protocols));
             isKalatsky = ismember({protocols{mpepID}.xfile}, 'stimKalatsky.x');
             fusID = mpepID(isKalatsky);
-            % if not done already, perform the analyses
-            if isempty(obj.fusi(fusID).outlierFrameIdxFast)
-                obj.fusi(fusID).getOutliers(Inf);
-            end
-            if isempty(obj.fusi(fusID).dIIFast)
-                obj.fusi(fusID).getdII;
-            end
             if isempty(obj.fusi(fusID).retinotopyMapsFast)
+                % if not done already, perform the analyses
+                if isempty(obj.fusi(fusID).outlierFrameIdxFast)
+                    obj.fusi(fusID).getOutliers(Inf);
+                end
+                if isempty(obj.fusi(fusID).dIIFast)
+                    obj.fusi(fusID).getdII;
+                end
                 obj.fusi(fusID).getRetinotopy;
             end
             % plot retinotopy
             obj.fusi(fusID).showRetinotopy;
+        end
+        
+        function getMask(obj)
+            yPos = unique([obj.fusi.yCoord]);
+            % usually should only be one yPos, but let's code it for a
+            % general scenario (i.e. several slices were acuired in the same experiment)
+            for iSlice = 1:length(yPos)
+                yInd = find(obj.yAxis == round(yPos(iSlice), 1));
+                zIdx = find(obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2));
+                xIdx = find(obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2));
+                im = obj.Doppler(zIdx, xIdx, yInd);
+                im = sqrt(im - min(im(:)));
+                figure;
+                hIm = imagesc(obj.xAxis(xIdx), obj.zAxis(zIdx), im);
+                axis equal tight
+                colormap hot;
+                caxis(prctile(im(:), [1 99]));
+                xMinMax = xlim;
+                zMinMax = ylim;
+                xx = [xMinMax, linspace(xMinMax(2), xMinMax(1), 7)]';
+                yy = [repmat(zMinMax(2), 1, 2),  repmat(zMinMax(1), 1, 7)]';
+                hPoly = drawpolygon(gca, 'Position', [xx, yy], 'LineWidth', 1, 'FaceAlpha', 0.4);
+                roiWait(hPoly); 
+                obj.mask(iSlice).y = yPos(iSlice);
+                obj.mask(iSlice).bw = createMask(hPoly);
+                obj.mask(iSlice).poly = hPoly.Position;
+                hIm.CData = hIm.CData.*obj.mask(iSlice).bw;
+                hPoly.Visible = 'off';
+            end
+        end
+        
+        function applyMask(obj)
+            nFusi = length(obj.fusi);
+            for iFus = 1:nFusi
+                % assuming that all the data is already hard-cropped to the
+                % obj.boundingBox limits
+                iMask = find(obj.fusi(iFus).yCoord == [obj.mask.y]);
+                obj.fusi(iFus).doppler = bsxfun(@times, obj.fusi(iFus).doppler, obj.mask(iMask).bw);
+            end
         end
     end
 end
