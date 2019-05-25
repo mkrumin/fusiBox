@@ -10,6 +10,7 @@ classdef YStack < handle & matlab.mixin.Copyable
         Doppler = [];
         BMode = [];
         fusi; % array of related Fus objects
+        svd = struct('meanFrame', [], 'U', [], 'S', []);
     end
     
     methods
@@ -20,7 +21,6 @@ classdef YStack < handle & matlab.mixin.Copyable
             obj.xAxis = data.Doppler.xAxis;
             obj.zAxis = data.Doppler.zAxis;
             obj.yAxis = data.yCoords;
-            %             obj.Doppler = squeeze(median(data.Doppler.yStack, 3));
             obj.Doppler = squeeze(min(data.Doppler.yStack, [], 3));
             obj.BMode = data.BMode;
             obj.BMode.yStack = squeeze(obj.BMode.yStack);
@@ -359,7 +359,7 @@ classdef YStack < handle & matlab.mixin.Copyable
                 xx = [xMinMax, linspace(xMinMax(2), xMinMax(1), 7)]';
                 yy = [repmat(zMinMax(2), 1, 2),  repmat(zMinMax(1), 1, 7)]';
                 hPoly = drawpolygon(gca, 'Position', [xx, yy], 'LineWidth', 1, 'FaceAlpha', 0.4);
-                roiWait(hPoly); 
+                roiWait(hPoly);
                 obj.mask(iSlice).y = yPos(iSlice);
                 obj.mask(iSlice).bw = createMask(hPoly);
                 obj.mask(iSlice).poly = hPoly.Position;
@@ -377,5 +377,46 @@ classdef YStack < handle & matlab.mixin.Copyable
                 obj.fusi(iFus).doppler = bsxfun(@times, obj.fusi(iFus).doppler, obj.mask(iMask).bw);
             end
         end
+        
+        function svdDecomposition(obj, nSVDs)
+            oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
+            meanFrame = median(oneBigDopplerMovie, 3);
+            oneBigDopplerMovie = bsxfun(@minus, oneBigDopplerMovie, meanFrame);
+            [nz, nx, nt] = size(oneBigDopplerMovie);
+            [U, S, V] = svds(reshape(double(oneBigDopplerMovie), nz*nx, nt), nSVDs);
+            obj.svd.meanFrame = meanFrame;
+            obj.svd.U = reshape(single(U), nz, nx, nSVDs);
+            obj.svd.S = diag(single(S));
+            nFusi = length(obj.fusi);
+            nFrames = cellfun(@size, {obj.fusi.doppler}, repmat({3}, 1, nFusi));
+            endIdx = cumsum(nFrames);
+            startIdx = [1, endIdx(1:nFusi-1)+1];
+            for iFus = 1:nFusi
+                idx = startIdx(iFus):endIdx(iFus);
+                obj.fusi(iFus).svd.V = single(V(idx, :));
+            end
+        end
+        
+        function plotSVDs(obj, iSVD)
+            nSVDs = length(iSVD);
+            nRows = floor(sqrt(nSVDs));
+            nColumns = ceil(nSVDs/nRows);
+            hFig = figure;
+%             colormap hot;
+            sVals = obj.svd.S(iSVD);
+            for iPlot = 1:nSVDs
+                subplot(nRows, nColumns, iPlot)
+                zIdx = find(obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2));
+                xIdx = find(obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2));
+                imagesc(obj.xAxis(xIdx), obj.zAxis(zIdx), obj.svd.U(:, :, iSVD(iPlot)));
+                clim = prctile(reshape(obj.svd.U(:, :, iSVD(iPlot)), [], 1), [0.1 99.9]);
+                % make clim symmetric around 0
+                clim = [-1 1]*max(abs(clim));
+                caxis(clim);
+                title(sprintf('i = %1.0f, s = %3.1d', iSVD(iPlot), sVals(iPlot)));
+                axis equal tight off;
+            end
+        end
+        
     end
 end

@@ -29,6 +29,7 @@ classdef Fus < handle
         dIIFast = []; % delta I/I0 of the fast doppler signal
         retinotopyMaps;
         retinotopyMapsFast;
+        svd = struct('V', []);
     end
     
     methods
@@ -155,32 +156,6 @@ classdef Fus < handle
             end
             %             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
-        end
-        
-        function plotSVDs(obj, nSVDs)
-            nRows = floor(sqrt(nSVDs));
-            nColumns = ceil(nSVDs/nRows);
-            idx = ~obj.outlierFrameIdxFast;
-            mov = obj.doppler(:, :, :);
-            mov = mov - median(mov, 3);
-            %             mov = obj.dIIFast(:, :, idx);
-            %             mov = imgaussfilt(mov, 2);
-            [nz, nx, nt] = size(mov);
-            mov = reshape(mov, nz*nx, nt);
-            [U, S, V] = svds(double(mov), nSVDs);
-            hFig = figure;
-            colormap hot;
-            Uframes = reshape(U, nz, nx, nSVDs);
-            sVals = diag(S);
-            for iPlot = 1:nSVDs
-                subplot(nRows, nColumns, iPlot)
-                imagesc(obj.xAxis, obj.zAxis, Uframes(:, :, iPlot));
-                idx = U(:, iPlot) ~= 0;
-                clim = prctile(U(idx, iPlot), [1 99]);
-                caxis(clim);
-                title(sprintf('sVal = %g', sVals(iPlot)));
-                axis equal tight;
-            end
         end
         
         function F = movie(obj)
