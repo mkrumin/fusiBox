@@ -170,12 +170,11 @@ classdef Fus < handle
                 mov = reshape(mov, nZ, nX, []);
                 mov = bsxfun(@plus, mov, obj.yStack.svd.meanFrame);
             end
-            idxZeroes = obj.doppler(:) == 0; % these are the masked out pixels
             mov = log10(mov - min(mov(:)));
             nFrames = size(mov, 3);
             % calculate the clim not including the masked out regions
-            clim = prctile(mov(~idxZeroes), [0.01 99.99]);
-%             clim = prctile(log10(obj.doppler(~idxZeroes)-min(obj.doppler(:))), [0.01 99.99]);
+            clim = prctile(mov(:), [0.01 99.99]);
+%             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
             for iFrame = 1:nFrames

@@ -354,10 +354,15 @@ classdef YStack < handle & matlab.mixin.Copyable
                 axis equal tight
                 colormap hot;
                 caxis(prctile(im(:), [1 99]));
-                xMinMax = xlim;
-                zMinMax = ylim;
-                xx = [xMinMax, linspace(xMinMax(2), xMinMax(1), 7)]';
-                yy = [repmat(zMinMax(2), 1, 2),  repmat(zMinMax(1), 1, 7)]';
+                if length(obj.mask) >= iSlice && ~isempty(obj.mask(iSlice))
+                    xx = obj.mask.poly(:,1);
+                    yy = obj.mask.poly(:,2);
+                else
+                    xMinMax = xlim;
+                    zMinMax = ylim;
+                    xx = [xMinMax, linspace(xMinMax(2), xMinMax(1), 7)]';
+                    yy = [repmat(zMinMax(2), 1, 2),  repmat(zMinMax(1), 1, 7)]';
+                end
                 hPoly = drawpolygon(gca, 'Position', [xx, yy], 'LineWidth', 1, 'FaceAlpha', 0.4);
                 roiWait(hPoly);
                 obj.mask(iSlice).y = yPos(iSlice);
@@ -374,7 +379,9 @@ classdef YStack < handle & matlab.mixin.Copyable
                 % assuming that all the data is already hard-cropped to the
                 % obj.boundingBox limits
                 iMask = find(obj.fusi(iFus).yCoord == [obj.mask.y]);
-                obj.fusi(iFus).doppler = bsxfun(@times, obj.fusi(iFus).doppler, obj.mask(iMask).bw);
+                nanMask = single(obj.mask(iMask).bw);
+                nanMask(~nanMask) = NaN;
+                obj.fusi(iFus).doppler = bsxfun(@times, obj.fusi(iFus).doppler, nanMask);
             end
         end
         
@@ -383,8 +390,12 @@ classdef YStack < handle & matlab.mixin.Copyable
             meanFrame = median(oneBigDopplerMovie, 3);
             oneBigDopplerMovie = bsxfun(@minus, oneBigDopplerMovie, meanFrame);
             [nz, nx, nt] = size(oneBigDopplerMovie);
+            % svds() cannot process matrices with NaNs
+            oneBigDopplerMovie(isnan(oneBigDopplerMovie)) = 0;
             [U, S, V] = svds(reshape(double(oneBigDopplerMovie), nz*nx, nt), nSVDs);
             obj.svd.meanFrame = meanFrame;
+            % bring NaNs back to where they have been
+            U(isnan(meanFrame(:)), :) = NaN;
             obj.svd.U = reshape(single(U), nz, nx, nSVDs);
             obj.svd.S = diag(single(S));
             nFusi = length(obj.fusi);
