@@ -158,16 +158,24 @@ classdef Fus < handle
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
         
-        function F = movie(obj)
-            %             idx = ~obj.outlierFrameIdx;
-            mov = obj.doppler(:,:,:);
-            %             mov = obj.dII(:,:,idx);
-%             mov =  mov-rmSVD(mov, 200);
-            %             mov = imgaussfilt3(mov, [1 1 0.5]);
-            mov = log(mov - min(mov(:)) + eps);
+        function F = movie(obj, iSVD)
+            
+            if nargin < 2
+                mov = obj.doppler;
+            else
+                nSVDs2Use = length(iSVD);
+                [nZ, nX, nSVD] = size(obj.yStack.svd.U);
+                Uflat = reshape(obj.yStack.svd.U(:, :, iSVD), nZ*nX, nSVDs2Use);
+                mov = Uflat * diag(obj.yStack.svd.S(iSVD)) * obj.svd.V(:, iSVD)';
+                mov = reshape(mov, nZ, nX, []);
+                mov = bsxfun(@plus, mov, obj.yStack.svd.meanFrame);
+            end
+            idxZeroes = obj.doppler(:) == 0; % these are the masked out pixels
+            mov = log10(mov - min(mov(:)));
             nFrames = size(mov, 3);
             % calculate the clim not including the masked out regions
-            clim = prctile(mov(mov>min(mov(:))), [0.01 99.99]);
+            clim = prctile(mov(~idxZeroes), [0.01 99.99]);
+%             clim = prctile(log10(obj.doppler(~idxZeroes)-min(obj.doppler(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
             for iFrame = 1:nFrames
@@ -175,6 +183,8 @@ classdef Fus < handle
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
                     tit = title(sprintf('%g/%g', iFrame, nFrames));
                     caxis(clim);
+                    cb = colorbar;
+                    cb.Label.String = 'log_{10}(I)';
                     axis equal tight off;
                 else
                     im.CData = mov(:,:,iFrame);
