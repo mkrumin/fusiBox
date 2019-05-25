@@ -154,7 +154,7 @@ classdef Fus < handle
                 stimPars(iStim).xAxis = obj.xAxis;
                 stimPars(iStim).yAxis = obj.zAxis;
             end
-            %             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
+            plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
         
@@ -190,8 +190,8 @@ classdef Fus < handle
                     tit.String = sprintf('%g/%g', iFrame, nFrames);
                 end
                 drawnow;
-                %                 pause(0.05);
-                %                 F(iFrame) = getframe(hFig);
+%                 pause(0.001);
+%                 F(iFrame) = getframe(hFig);
             end
         end
     end

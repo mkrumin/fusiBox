@@ -10,7 +10,7 @@ classdef YStack < handle & matlab.mixin.Copyable
         Doppler = [];
         BMode = [];
         fusi; % array of related Fus objects
-        svd = struct('meanFrame', [], 'U', [], 'S', []);
+        svd = struct('meanFrame', [], 'U', [], 'UdII', [], 'S', []);
     end
     
     methods
@@ -406,6 +406,7 @@ classdef YStack < handle & matlab.mixin.Copyable
                 idx = startIdx(iFus):endIdx(iFus);
                 obj.fusi(iFus).svd.V = single(V(idx, :));
             end
+            obj.svd.UdII = bsxfun(@rdivide, obj.svd.U, obj.svd.meanFrame);
         end
         
         function plotSVDs(obj, iSVD)
