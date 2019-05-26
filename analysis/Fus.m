@@ -174,7 +174,7 @@ classdef Fus < handle
             nFrames = size(mov, 3);
             % calculate the clim not including the masked out regions
             clim = prctile(mov(:), [0.01 99.99]);
-%             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
+            %             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
             for iFrame = 1:nFrames
@@ -190,9 +190,55 @@ classdef Fus < handle
                     tit.String = sprintf('%g/%g', iFrame, nFrames);
                 end
                 drawnow;
-%                 pause(0.001);
-%                 F(iFrame) = getframe(hFig);
+                %                 pause(0.001);
+                %                 F(iFrame) = getframe(hFig);
             end
         end
+        
+        function F = dIIMovie(obj, iSVD)
+            
+            if nargin < 2
+                mov = obj.dII;
+            else
+                nSVDs2Use = length(iSVD);
+                [nZ, nX, nSVD] = size(obj.yStack.svd.UdII);
+                Uflat = reshape(obj.yStack.svd.UdII(:, :, iSVD), nZ*nX, nSVDs2Use);
+                mov = Uflat * diag(obj.yStack.svd.S(iSVD)) * obj.svd.V(:, iSVD)';
+                mov = reshape(mov, nZ, nX, []);
+            end
+            nFrames = size(mov, 3);
+%             mov = imgaussfilt3(mov, [0.1 0.1 5]);
+            % calculate the clim not including the masked out regions
+            clim = prctile(mov(:), [1 99]);
+            % make clim symmetric (should be more informative when looking at dI/I0)
+            clim = [-1 1]*max(abs(clim));
+            hFig = figure;
+            % create a blue-white-red colormap with white == 0
+            r = [linspace(0, 1, 32), ones(1, 32)]';
+            g = [linspace(0, 1, 32), linspace(1, 0, 32)]';
+            b = flipud(r);
+            % (colormap).^(1/n) will make the white region wider
+            colormap(([r, g, b]).^(1/2));
+%             colormap hot
+            mov(isnan(mov)) = 0;
+            for iFrame = 1:nFrames
+                if iFrame == 1
+                    im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
+%                     tit = title(sprintf('%g/%g', iFrame, nFrames));
+                    tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
+                    caxis(clim);
+                    cb = colorbar;
+                    cb.Label.String = '\DeltaI/I_0';
+                    axis equal tight off;
+                else
+                    im.CData = mov(:,:,iFrame);
+                    tit.String = sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames));
+                end
+                drawnow;
+%                 pause(0.08);
+                %                 F(iFrame) = getframe(hFig);
+            end
+        end
+        
     end
 end
