@@ -5,6 +5,7 @@ classdef Fus < handle
         yStack = [];
         doppler = [];
         dopplerFast = [];
+        regDoppler = []; % registered Doppler data
         xAxis = [];
         zAxis = [];
         yCoord = [];
@@ -27,9 +28,11 @@ classdef Fus < handle
         outlierFrameIdxFast = [];
         dII = []; % delta I/I0 of the doppler signal
         dIIFast = []; % delta I/I0 of the fast doppler signal
+        regDII = []; % delta I/I0 of the doppler signal post-registration
         retinotopyMaps;
         retinotopyMapsFast;
         svd = struct('V', []);
+        svdReg = struct('V', []);
     end
     
     methods
@@ -124,6 +127,10 @@ classdef Fus < handle
             idx = ~obj.outlierFrameIdx;
             I0 = median(obj.doppler(:, :, idx), 3);
             obj.dII = bsxfun(@rdivide, bsxfun(@minus, obj.doppler, I0), I0);
+            if ~isempty(obj.regDoppler)
+                I0 = median(obj.regDoppler(:, :, idx), 3);
+                obj.regDII = bsxfun(@rdivide, bsxfun(@minus, obj.regDoppler, I0), I0);
+            end
             idx = ~obj.outlierFrameIdxFast;
             I0Fast = median(obj.dopplerFast(:, :, idx), 3);
             obj.dIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.dopplerFast, I0Fast), I0Fast);
@@ -131,12 +138,19 @@ classdef Fus < handle
         
         function getRetinotopy(obj)
             idx = ~obj.outlierFrameIdx;
+            idx = true(size(idx));
             stimPars = getStimPars(obj.protocol);
-            obj.retinotopyMaps = getPreferenceMaps(obj.dII(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
+%             mov = obj.dII(:,:,idx);
+            nSVDs = 490;
+            svdIdx = [1:nSVDs]+1;
+            [nz, nx, ~] = size(obj.yStack.svd.UdII);
+            mov = reshape(obj.yStack.svd.UdII(:,:,svdIdx), nz*nx, nSVDs) * diag(obj.yStack.svd.S(svdIdx)) * ...
+                obj.svd.V(:, svdIdx)';
+            mov = reshape(mov, nz, nx, []);
+            obj.retinotopyMaps = getPreferenceMaps(mov(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
             
             idx = ~obj.outlierFrameIdxFast;
             mov = obj.dIIFast(:,:,idx);
-            mov = mov - rmSVD(mov, 100);
             obj.retinotopyMapsFast = getPreferenceMaps(mov, obj.tAxisFast(idx) + obj.dtFast/2, ...
                 obj.stimTimes, stimPars);
         end
@@ -155,59 +169,95 @@ classdef Fus < handle
                 stimPars(iStim).yAxis = obj.zAxis;
             end
             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
-            plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
+%             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
         
-        function F = movie(obj, iSVD)
+        function F = movie(obj, iSVD, reg)
             
-            if nargin < 2
-                mov = obj.doppler;
+            if nargin < 3
+                reg = false;
+            end
+            
+            if nargin < 2 || isempty(iSVD)
+                if reg
+                    mov = obj.regDoppler;
+                else
+                    mov = obj.doppler;
+                end
             else
                 nSVDs2Use = length(iSVD);
-                [nZ, nX, nSVD] = size(obj.yStack.svd.U);
-                Uflat = reshape(obj.yStack.svd.U(:, :, iSVD), nZ*nX, nSVDs2Use);
-                mov = Uflat * diag(obj.yStack.svd.S(iSVD)) * obj.svd.V(:, iSVD)';
+                if reg
+                    U = obj.yStack.svdReg.U;
+                    S = obj.yStack.svdReg.S;
+                    V = obj.svdReg.V;
+                    meanFrame = obj.yStack.svdReg.meanFrame;
+                else
+                    U = obj.yStack.svd.U;
+                    S = obj.yStack.svd.S;
+                    V = obj.svd.V;
+                    meanFrame = obj.yStack.svd.meanFrame;
+                end
+                [nZ, nX, ~] = size(U);
+                Uflat = reshape(U(:, :, iSVD), nZ*nX, nSVDs2Use);
+                mov = Uflat * diag(S(iSVD)) * V(:, iSVD)';
                 mov = reshape(mov, nZ, nX, []);
-                mov = bsxfun(@plus, mov, obj.yStack.svd.meanFrame);
+                mov = bsxfun(@plus, mov, meanFrame);
             end
             mov = log10(mov - min(mov(:)));
             nFrames = size(mov, 3);
             % calculate the clim not including the masked out regions
             clim = prctile(mov(:), [0.01 99.99]);
-            %             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
+%             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
-                    tit = title(sprintf('%g/%g', iFrame, nFrames));
+                    tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
                     caxis(clim);
                     cb = colorbar;
                     cb.Label.String = 'log_{10}(I)';
                     axis equal tight off;
                 else
                     im.CData = mov(:,:,iFrame);
-                    tit.String = sprintf('%g/%g', iFrame, nFrames);
+                    tit.String = sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames));
                 end
                 drawnow;
-                %                 pause(0.001);
-                %                 F(iFrame) = getframe(hFig);
+%                 pause(0.05);
+                F(iFrame) = getframe(hFig);
             end
         end
         
-        function F = dIIMovie(obj, iSVD)
+        function F = dIIMovie(obj, iSVD, reg)
             
-            if nargin < 2
-                mov = obj.dII;
+            if nargin < 3
+                reg = false;
+            end
+
+            if nargin < 2 || isempty(iSVD)
+                if reg
+                    mov = obj.regDII;
+                else
+                    mov = obj.dII;
+                end
             else
+                if reg
+                    UdII = obj.yStack.svdReg.UdII;
+                    S = obj.yStack.svdReg.S;
+                    V = obj.svdReg.V;
+                else
+                    UdII = obj.yStack.svd.UdII;
+                    S = obj.yStack.svd.S;
+                    V = obj.svd.V;
+                end
                 nSVDs2Use = length(iSVD);
-                [nZ, nX, nSVD] = size(obj.yStack.svd.UdII);
-                Uflat = reshape(obj.yStack.svd.UdII(:, :, iSVD), nZ*nX, nSVDs2Use);
-                mov = Uflat * diag(obj.yStack.svd.S(iSVD)) * obj.svd.V(:, iSVD)';
+                [nZ, nX, ~] = size(UdII);
+                Uflat = reshape(UdII(:, :, iSVD), nZ*nX, nSVDs2Use);
+                mov = Uflat * diag(S(iSVD)) * V(:, iSVD)';
                 mov = reshape(mov, nZ, nX, []);
             end
             nFrames = size(mov, 3);
-%             mov = imgaussfilt3(mov, [0.1 0.1 5]);
+%             mov = imgaussfilt3(mov, [1]);
             % calculate the clim not including the masked out regions
             clim = prctile(mov(:), [1 99]);
             % make clim symmetric (should be more informative when looking at dI/I0)
@@ -224,7 +274,6 @@ classdef Fus < handle
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
-%                     tit = title(sprintf('%g/%g', iFrame, nFrames));
                     tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
                     caxis(clim);
                     cb = colorbar;
@@ -236,7 +285,7 @@ classdef Fus < handle
                 end
                 drawnow;
 %                 pause(0.08);
-                %                 F(iFrame) = getframe(hFig);
+                F(iFrame) = getframe(hFig);
             end
         end
         

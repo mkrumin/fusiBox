@@ -11,6 +11,8 @@ classdef YStack < handle & matlab.mixin.Copyable
         BMode = [];
         fusi; % array of related Fus objects
         svd = struct('meanFrame', [], 'U', [], 'UdII', [], 'S', []);
+        svdReg = struct('meanFrame', [], 'U', [], 'UdII', [], 'S', []);
+        D = []; % displacement field estimated during data registration
     end
     
     methods
@@ -385,28 +387,49 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
         end
         
-        function svdDecomposition(obj, nSVDs)
-            oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
+        function svdDecomposition(obj, nSVDs, reg)
+            if nargin < 3
+                % in this case perform SVD on doppler, otherwise on regDoppler
+                reg = false;
+            end
+            
+            if reg
+                oneBigDopplerMovie = cell2mat(reshape({obj.fusi.regDoppler}, 1, 1, []));
+            else
+                oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
+            end
             meanFrame = median(oneBigDopplerMovie, 3);
             oneBigDopplerMovie = bsxfun(@minus, oneBigDopplerMovie, meanFrame);
             [nz, nx, nt] = size(oneBigDopplerMovie);
             % svds() cannot process matrices with NaNs
             oneBigDopplerMovie(isnan(oneBigDopplerMovie)) = 0;
             [U, S, V] = svds(reshape(double(oneBigDopplerMovie), nz*nx, nt), nSVDs);
-            obj.svd.meanFrame = meanFrame;
             % bring NaNs back to where they have been
             U(isnan(meanFrame(:)), :) = NaN;
-            obj.svd.U = reshape(single(U), nz, nx, nSVDs);
-            obj.svd.S = diag(single(S));
+            
+            if ~reg
+                obj.svd.meanFrame = meanFrame;
+                obj.svd.U = reshape(single(U), nz, nx, nSVDs);
+                obj.svd.S = diag(single(S));
+                obj.svd.UdII = bsxfun(@rdivide, obj.svd.U, obj.svd.meanFrame);
+            else
+                obj.svdReg.meanFrame = meanFrame;
+                obj.svdReg.U = reshape(single(U), nz, nx, nSVDs);
+                obj.svdReg.S = diag(single(S));
+                obj.svdReg.UdII = bsxfun(@rdivide, obj.svdReg.U, obj.svdReg.meanFrame);
+            end
             nFusi = length(obj.fusi);
             nFrames = cellfun(@size, {obj.fusi.doppler}, repmat({3}, 1, nFusi));
             endIdx = cumsum(nFrames);
             startIdx = [1, endIdx(1:nFusi-1)+1];
             for iFus = 1:nFusi
                 idx = startIdx(iFus):endIdx(iFus);
-                obj.fusi(iFus).svd.V = single(V(idx, :));
+                if ~reg
+                    obj.fusi(iFus).svd.V = single(V(idx, :));
+                else
+                    obj.fusi(iFus).svdReg.V = single(V(idx, :));
+                end
             end
-            obj.svd.UdII = bsxfun(@rdivide, obj.svd.U, obj.svd.meanFrame);
         end
         
         function plotSVDs(obj, iSVD)
@@ -428,6 +451,74 @@ classdef YStack < handle & matlab.mixin.Copyable
                 title(sprintf('i = %1.0f, s = %3.1d', iSVD(iPlot), sVals(iPlot)));
                 axis equal tight off;
             end
+        end
+        
+        function regDoppler(obj)
+            oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
+            [nz, nx, nt] = size(oneBigDopplerMovie);
+            fprintf('Total %g frames\n', nt);
+            nSVDs = 200;
+            fprintf('Let''s extract first %g SVDs ..', nSVDs)
+            svdTic = tic;
+            meanFrame = median(oneBigDopplerMovie, 3);
+            oneBigDopplerMovie = bsxfun(@minus, oneBigDopplerMovie, meanFrame);
+            % svds() cannot process matrices with NaNs
+            oneBigDopplerMovie(isnan(oneBigDopplerMovie)) = 0;
+            [U, S, V] = svds(reshape(double(oneBigDopplerMovie), nz*nx, nt), nSVDs);
+            clear oneBigDopplerMovie;
+            fprintf('. done (%1.0f seconds)\n', toc(svdTic));
+            
+            fprintf('Reconstructing Doppler movie from first %g SVDs ..', nSVDs);
+            reconstructTic = tic;
+            svdDoppler = U * S * V';
+            svdDoppler = reshape(svdDoppler, nz, nx, nt);
+            meanFrame(isnan(meanFrame)) = 0;
+            svdDoppler = single(bsxfun(@plus, svdDoppler, meanFrame));
+            fprintf('. done (%4.2f seconds)\n', toc(reconstructTic));
+            
+            fprintf('Calculating displacement fields and registering Doppler data: \n')
+            svdMeanFrame = median(svdDoppler, 3);
+            regDoppler = zeros(size(svdDoppler), 'single');
+%             obj.D = zeros(nz*nx*2, nt, 'single');
+            doppler = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
+            doppler(isnan(doppler)) = 0;
+            nChar = 0;
+            baseline = min(min(svdDoppler(:)), min(svdMeanFrame(:)));
+            svdDoppler = log(svdDoppler - baseline + eps('single'));
+            svdMeanFrame = log(svdMeanFrame - baseline + eps('single'));
+            regTic = tic;
+            for iFrame = 1:nt
+                fprintf(repmat('\b', 1, nChar));
+                nChar = fprintf('Registering frame %g/%g (%3.1f minutes left) ..', ...
+                    iFrame, nt, toc(regTic)/(iFrame-1)*(nt-iFrame+1)/60);
+                DF = imregdemons(svdDoppler(:,:,iFrame), svdMeanFrame, 50, ...
+                    'DisplayWaitbar', false);
+                regDoppler(:,:,iFrame) = imwarp(doppler(:,:,iFrame), DF, 'linear');%, 'FillValues', 0);
+%                 iStart = nx*nz*2*(iFrame - 1)+1;
+%                 iEnd = nx*nz*2*iFrame;
+%                 obj.D(:, 1) = DF(:); 
+            end
+            fprintf('. done (%3.1f minutes)\n', toc(regTic)/60);
+            
+            fprintf('Dividing registered data into separate experiments ..');
+            divTic = tic;
+            nFusi = length(obj.fusi);
+            nFrames = cellfun(@size, {obj.fusi.doppler}, repmat({3}, 1, nFusi));
+            endIdx = cumsum(nFrames);
+            startIdx = [1, endIdx(1:nFusi-1)+1];
+            for iFus = 1:nFusi
+                idx = startIdx(iFus):endIdx(iFus);
+                obj.fusi(iFus).regDoppler = regDoppler(:,:,idx);
+                % apply the same mask as for the original doppler
+                obj.fusi(iFus).regDoppler(isnan(obj.fusi(iFus).doppler)) = NaN;
+            end
+            fprintf('. done (%3.1f seconds)\n', toc(divTic));
+            
+            nSVDs = 500;
+            fprintf('Performing SVD decomposition on registered data (%g SVDs) ..', nSVDs);
+            svdTic = tic;
+            obj.svdDecomposition(nSVDs, 1);
+            fprintf('. done (%3.1f seconds)\n', toc(svdTic));
         end
         
     end
