@@ -242,24 +242,24 @@ classdef Fus < handle
                 end
             else
                 if reg
-                    UdII = obj.yStack.svdReg.UdII;
-                    S = obj.yStack.svdReg.S;
-                    V = obj.svdReg.V;
+                    U = obj.yStack.svdReg.UdII;
+                    S = obj.yStack.svdReg.SdII;
+                    V = obj.svdReg.VdII;
                 else
-                    UdII = obj.yStack.svd.UdII;
-                    S = obj.yStack.svd.S;
-                    V = obj.svd.V;
+                    U = obj.yStack.svd.UdII;
+                    S = obj.yStack.svd.SdII;
+                    V = obj.svd.VdII;
                 end
                 nSVDs2Use = length(iSVD);
-                [nZ, nX, ~] = size(UdII);
-                Uflat = reshape(UdII(:, :, iSVD), nZ*nX, nSVDs2Use);
+                [nZ, nX, ~] = size(U);
+                Uflat = reshape(U(:, :, iSVD), nZ*nX, nSVDs2Use);
                 mov = Uflat * diag(S(iSVD)) * V(:, iSVD)';
                 mov = reshape(mov, nZ, nX, []);
             end
             nFrames = size(mov, 3);
-%             mov = imgaussfilt3(mov, [1]);
+%             mov = imgaussfilt3(mov, 2);
             % calculate the clim not including the masked out regions
-            clim = prctile(mov(:), [1 99]);
+            clim = prctile(mov(:), [0.5 99.5]);
             % make clim symmetric (should be more informative when looking at dI/I0)
             clim = [-1 1]*max(abs(clim));
             hFig = figure;

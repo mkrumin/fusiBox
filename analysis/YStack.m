@@ -321,6 +321,15 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
         end
         
+        function svddII(obj, reg)
+            if ~reg
+                obj.svd.UdII = bsxfun(@rdivide, obj.svd.U, obj.svd.meanFrame);
+            else
+                obj.svdReg.UdII = bsxfun(@rdivide, obj.svdReg.U, obj.svdReg.meanFrame);
+            end
+            obj.rotateUdII(reg);
+        end
+        
         function getRetinotopy(obj)
             % figure out which of the experiments is Kalatsky
             protocols = {obj.fusi.protocol};
@@ -411,12 +420,12 @@ classdef YStack < handle & matlab.mixin.Copyable
                 obj.svd.meanFrame = meanFrame;
                 obj.svd.U = reshape(single(U), nz, nx, nSVDs);
                 obj.svd.S = diag(single(S));
-                obj.svd.UdII = bsxfun(@rdivide, obj.svd.U, obj.svd.meanFrame);
+%                 obj.svd.UdII = bsxfun(@rdivide, obj.svd.U, obj.svd.meanFrame);
             else
                 obj.svdReg.meanFrame = meanFrame;
                 obj.svdReg.U = reshape(single(U), nz, nx, nSVDs);
                 obj.svdReg.S = diag(single(S));
-                obj.svdReg.UdII = bsxfun(@rdivide, obj.svdReg.U, obj.svdReg.meanFrame);
+%                 obj.svdReg.UdII = bsxfun(@rdivide, obj.svdReg.U, obj.svdReg.meanFrame);
             end
             nFusi = length(obj.fusi);
             nFrames = cellfun(@size, {obj.fusi.doppler}, repmat({3}, 1, nFusi));
@@ -520,6 +529,54 @@ classdef YStack < handle & matlab.mixin.Copyable
             svdTic = tic;
             obj.svdDecomposition(nSVDs, 1);
             fprintf('. done (%3.1f seconds)\n', toc(svdTic));
+            
+            fprintf('Rotating SVD decomposition of dI/I of registered data (%g SVDs) ..', nSVDs);
+            svdTic = tic;
+            obj.svddII(1);
+            fprintf('. done (%3.1f seconds)\n', toc(svdTic));
+        end
+        
+        function rotateUdII(obj, reg)
+            if reg
+                U = obj.svdReg.UdII;
+                S = obj.svdReg.S;
+            else
+                U = obj.svd.UdII;
+                S = obj.svd.S;
+            end
+            V = [];
+            for iFus = 1:length(obj.fusi)
+                if reg
+                    V = cat(1, V, obj.fusi(iFus).svdReg.V);
+                else
+                    V = cat(1, V, obj.fusi(iFus).svd.V);
+                end
+            end
+            [nz, nx, nSVDs] = size(U);
+            Uflat = reshape(U, nz*nx, nSVDs);
+            mov = Uflat * diag(S) * V';
+            mov(isnan(mov)) = 0;
+            [Unew, Snew, Vnew] = svds(double(mov), nSVDs);
+            Unew(isnan(Uflat)) = NaN;
+            if reg
+                obj.svdReg.UdII = single(reshape(Unew, nz, nx, nSVDs));
+                obj.svdReg.SdII = single(diag(Snew));
+            else
+                obj.svd.UdII = single(reshape(Unew, nz, nx, nSVDs));
+                obj.svd.SdII = single(diag(Snew));
+            end
+            nFusi = length(obj.fusi);
+            nFrames = cellfun(@size, {obj.fusi.doppler}, repmat({3}, 1, nFusi));
+            endIdx = cumsum(nFrames);
+            startIdx = [1, endIdx(1:nFusi-1)+1];
+            for iFus = 1:nFusi
+                idx = startIdx(iFus):endIdx(iFus);
+                if reg
+                    obj.fusi(iFus).svdReg.VdII = single(Vnew(idx, :));
+                else
+                    obj.fusi(iFus).svd.VdII = single(Vnew(idx, :));
+                end
+            end
         end
         
     end
