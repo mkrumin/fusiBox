@@ -457,7 +457,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
             [nz, nx, nt] = size(oneBigDopplerMovie);
             fprintf('Total %g frames\n', nt);
-            nSVDs = 200;
+            nSVDs = 100;
             fprintf('Let''s extract first %g SVDs ..', nSVDs)
             svdTic = tic;
             meanFrame = median(oneBigDopplerMovie, 3);
@@ -491,13 +491,14 @@ classdef YStack < handle & matlab.mixin.Copyable
                 fprintf(repmat('\b', 1, nChar));
                 nChar = fprintf('Registering frame %g/%g (%3.1f minutes left) ..', ...
                     iFrame, nt, toc(regTic)/(iFrame-1)*(nt-iFrame+1)/60);
-                DF = imregdemons(svdDoppler(:,:,iFrame), svdMeanFrame, 50, ...
+                DF = imregdemons(svdDoppler(:,:,iFrame), svdMeanFrame, 25, ...
                     'DisplayWaitbar', false);
-                regDoppler(:,:,iFrame) = imwarp(doppler(:,:,iFrame), DF, 'linear');%, 'FillValues', 0);
+                regDoppler(:,:,iFrame) = imwarp(doppler(:,:,iFrame), DF, 'linear', 'FillValues', NaN);
 %                 iStart = nx*nz*2*(iFrame - 1)+1;
 %                 iEnd = nx*nz*2*iFrame;
 %                 obj.D(:, 1) = DF(:); 
             end
+            regDoppler(repmat(any(isnan(regDoppler), 3), 1, 1, nt)) = NaN;
             fprintf('. done (%3.1f minutes)\n', toc(regTic)/60);
             
             fprintf('Dividing registered data into separate experiments ..');
