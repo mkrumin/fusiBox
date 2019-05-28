@@ -356,7 +356,7 @@ classdef YStack < handle & matlab.mixin.Copyable
                 axis equal tight
                 colormap hot;
                 caxis(prctile(im(:), [1 99]));
-                if length(obj.mask) >= iSlice && ~isempty(obj.mask(iSlice))
+                if length(obj.mask) >= iSlice && ~isempty(obj.mask(iSlice).poly)
                     xx = obj.mask.poly(:,1);
                     yy = obj.mask.poly(:,2);
                 else
