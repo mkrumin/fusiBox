@@ -210,6 +210,10 @@ classdef Fus < handle
 %             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
+            if nargout > 0
+                F = struct('cdata', [], 'colormap', []);
+                F = repmat(F, nFrames, 1);
+            end
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
@@ -224,7 +228,9 @@ classdef Fus < handle
                 end
                 drawnow;
 %                 pause(0.05);
-                F(iFrame) = getframe(hFig);
+                if nargout > 0
+                    F(iFrame) = getframe(hFig);
+                end
             end
         end
         
@@ -271,6 +277,12 @@ classdef Fus < handle
             colormap(([r, g, b]).^(1/2));
 %             colormap hot
             mov(isnan(mov)) = 0;
+
+            if nargout > 0
+                F = struct('cdata', [], 'colormap', []);
+                F = repmat(F, nFrames, 1);
+            end
+
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
@@ -285,7 +297,9 @@ classdef Fus < handle
                 end
                 drawnow;
 %                 pause(0.08);
-                F(iFrame) = getframe(hFig);
+                if nargout > 0 
+                    F(iFrame) = getframe(hFig);
+                end
             end
         end
         
