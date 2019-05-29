@@ -441,19 +441,49 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
         end
         
-        function plotSVDs(obj, iSVD)
+        function plotSVDs(obj, iSVD, regFlag, dIIFlag)
+            if nargin < 3 || isempty(regFlag)
+                regFlag = false;
+            end
+            if nargin < 4 || isempty(dIIFlag)
+                dIIFlag = false;
+            end
+            
             nSVDs = length(iSVD);
             nRows = floor(sqrt(nSVDs));
             nColumns = ceil(nSVDs/nRows);
             hFig = figure;
+            % create a blue-white-red colormap with white == 0
+            r = [linspace(0, 1, 32), ones(1, 32)]';
+            g = [linspace(0, 1, 32), linspace(1, 0, 32)]';
+            b = flipud(r);
+            % (colormap).^(1/n) will make the white region wider
+            colormap(([r, g, b]).^(1/2));
 %             colormap hot;
-            sVals = obj.svd.S(iSVD);
+            if regFlag
+                if dIIFlag
+                    sVals = obj.svdReg.SdII(iSVD);
+                    U = obj.svdReg.UdII;
+                else
+                    sVals = obj.svdReg.S(iSVD);
+                    U = obj.svdReg.U;
+                end
+            else
+                if dIIFlag
+                    sVals = obj.svd.SdII(iSVD);
+                    U = obj.svd.UdII;
+                else
+                    sVals = obj.svd.S(iSVD);
+                    U = obj.svd.U;
+                end
+            end
+            U(isnan(U)) = 0;
             for iPlot = 1:nSVDs
                 subplot(nRows, nColumns, iPlot)
                 zIdx = find(obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2));
                 xIdx = find(obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2));
-                imagesc(obj.xAxis(xIdx), obj.zAxis(zIdx), obj.svd.U(:, :, iSVD(iPlot)));
-                clim = prctile(reshape(obj.svd.U(:, :, iSVD(iPlot)), [], 1), [0.1 99.9]);
+                imagesc(obj.xAxis(xIdx), obj.zAxis(zIdx), U(:, :, iSVD(iPlot)));
+                clim = prctile(reshape(U(:, :, iSVD(iPlot)), [], 1), [1 99]);
                 % make clim symmetric around 0
                 clim = [-1 1]*max(abs(clim));
                 caxis(clim);
