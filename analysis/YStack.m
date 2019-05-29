@@ -466,7 +466,9 @@ classdef YStack < handle & matlab.mixin.Copyable
             oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
             [nz, nx, nt] = size(oneBigDopplerMovie);
             fprintf('Total %g frames\n', nt);
-            nSVDs = 100;
+            % TODO use existing svd decomposition for this step, if available
+            nSVDs = 100; % for initial svd denoising pre-registration
+            nIter = 50; % number of iterations for Displacement Field estimation
             fprintf('Let''s extract first %g SVDs ..', nSVDs)
             svdTic = tic;
             meanFrame = median(oneBigDopplerMovie, 3);
@@ -500,7 +502,7 @@ classdef YStack < handle & matlab.mixin.Copyable
                 fprintf(repmat('\b', 1, nChar));
                 nChar = fprintf('Registering frame %g/%g (%3.1f minutes left) ..', ...
                     iFrame, nt, toc(regTic)/(iFrame-1)*(nt-iFrame+1)/60);
-                DF = imregdemons(svdDoppler(:,:,iFrame), svdMeanFrame, 25, ...
+                DF = imregdemons(svdDoppler(:,:,iFrame), svdMeanFrame, nIter, ...
                     'DisplayWaitbar', false);
                 regDoppler(:,:,iFrame) = imwarp(doppler(:,:,iFrame), DF, 'linear', 'FillValues', NaN);
 %                 iStart = nx*nz*2*(iFrame - 1)+1;
@@ -524,7 +526,11 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
             fprintf('. done (%3.1f seconds)\n', toc(divTic));
             
-            nSVDs = 500;
+            if ~isempty(obj.svd.U)
+                nSVDs = size(obj.svd.U, 3);
+            else
+                nSVDs = 500;
+            end
             fprintf('Performing SVD decomposition on registered data (%g SVDs) ..', nSVDs);
             svdTic = tic;
             obj.svdDecomposition(nSVDs, 1);

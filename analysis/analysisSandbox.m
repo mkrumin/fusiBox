@@ -69,14 +69,37 @@ showStimCorr(stimCorr, staMovies, expData)
 
 F = createExpMovie(expData);
 
-%%
+%% A sceleton script for full data preprocessing
+% Mask the brain
 YS.getMask;
 YS.applyMask;
-YS.svdDecomposition(500);
+% do the preprocessing
+nSVDs = 400;
+fprintf('Peforming SVD decomposition (%g SVDs) ..', nSVDs);
+svdTic = tic;
+YS.svdDecomposition(nSVDs);
+fprintf('. done (%1.0f seconds)\n', toc(svdTic));
+fprintf('Rotating the dII SVD decomposition basis ..');
+diiTic = tic;
 YS.svddII(0);
+fprintf('. done (%1.0f seconds)\n', toc(diiTic));
+fprintf('Performing doppler registration:');
+regTic = tic;
 YS.regDoppler;
+t = toc(regTic); 
+h = floor(t/3600); m = floor(mod(t,3600)/60); s = floor(mod(t, 60));
+fprintf('Total time spent for registration - %02.0fh%02.0fm%02.0fs\n', h, m, s)
+fprintf('Detecting outlier frames ..');
+outTic = tic;
 YS.getOutliers(Inf);
+fprintf(' . done (%3.1f seconds)\n', toc(outTic));
+fprintf('Calculating dII directly from doppler movies ..');
+diiTic = tic;
 YS.getdII;
+fprintf(' . done (%3.1f seconds)\n', toc(diiTic));
+t = toc(svdTic); 
+h = floor(t/3600); m = floor(mod(t,3600)/60); s = floor(mod(t, 60));
+fprintf('Total time spent preprocessing the whole dataset - %02.0fh%02.0fm%02.0fs\n', h, m, s)
 
 %%
 % Fall = struct('cdata', [], 'colormap', []);
