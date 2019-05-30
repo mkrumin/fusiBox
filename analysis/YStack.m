@@ -355,7 +355,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             % usually should only be one yPos, but let's code it for a
             % general scenario (i.e. several slices were acuired in the same experiment)
             for iSlice = 1:length(yPos)
-                yInd = find(obj.yAxis == round(yPos(iSlice), 1));
+                yInd = find(round(obj.yAxis, 1) == round(yPos(iSlice), 1));
                 zIdx = find(obj.zAxis >= obj.boundingBox.z(1) & obj.zAxis <= obj.boundingBox.z(2));
                 xIdx = find(obj.xAxis >= obj.boundingBox.x(1) & obj.xAxis <= obj.boundingBox.x(2));
                 im = obj.Doppler(zIdx, xIdx, yInd);
