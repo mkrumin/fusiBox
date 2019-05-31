@@ -141,11 +141,12 @@ classdef Fus < handle
             idx = true(size(idx));
             stimPars = getStimPars(obj.protocol);
 %             mov = obj.dII(:,:,idx);
-            nSVDs = 490;
-            svdIdx = [1:nSVDs]+1;
-            [nz, nx, ~] = size(obj.yStack.svd.UdII);
-            mov = reshape(obj.yStack.svd.UdII(:,:,svdIdx), nz*nx, nSVDs) * diag(obj.yStack.svd.S(svdIdx)) * ...
-                obj.svd.V(:, svdIdx)';
+            svdIdx = [1:100];
+            U = obj.yStack.svdReg.UdII(:, :, svdIdx);
+            S = obj.yStack.svdReg.SdII(svdIdx);
+            V = obj.svdReg.VdII(:, svdIdx);
+            [nz, nx, ~] = size(U);
+            mov = reshape(U, nz*nx, []) * diag(S) * V';
             mov = reshape(mov, nz, nx, []);
             obj.retinotopyMaps = getPreferenceMaps(mov(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
             
