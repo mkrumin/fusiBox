@@ -12,7 +12,7 @@ classdef YStack < handle & matlab.mixin.Copyable
         fusi; % array of related Fus objects
         svd = struct('meanFrame', [], 'U', [], 'UdII', [], 'S', []);
         svdReg = struct('meanFrame', [], 'U', [], 'UdII', [], 'S', []);
-        D = []; % displacement field estimated during data registration
+        regParams = struct('nSVDs', [], 'nIter', [], 'AFS', []); % parameters used for registration
     end
     
     methods
@@ -489,18 +489,29 @@ classdef YStack < handle & matlab.mixin.Copyable
             oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
             [nz, nx, nt] = size(oneBigDopplerMovie);
             fprintf('Total %g frames\n', nt);
-            % TODO use existing svd decomposition for this step, if available
-            nSVDs = 100; % for initial svd denoising pre-registration
-            nIter = 50; % number of iterations for Displacement Field estimation
-            AFS = 1.5; % 'Accumulated Field Smoothing' parameter
+            nSVDs = 200; % for initial svd denoising pre-registration
+            nIter = 25; % number of iterations for Displacement Field estimation
+            AFS = 1; % 'Accumulated Field Smoothing' parameter
             nSVDsFinal = 500; % for final decomposition
-            fprintf('Let''s extract first %g SVDs ..', nSVDs)
-            svdTic = tic;
-            meanFrame = median(oneBigDopplerMovie, 3);
-            oneBigDopplerMovie = bsxfun(@minus, oneBigDopplerMovie, meanFrame);
-            [U, S, V] = nanSVD(oneBigDopplerMovie, nSVDs);
-            clear oneBigDopplerMovie;
-            fprintf('. done (%1.0f seconds)\n', toc(svdTic));
+            if isfield(obj.svd, 'U') && (size(obj.svd.U, 3) >= nSVDs)
+                fprintf('We already have first %g SVDs, let''s use them\n', nSVDs)
+                U = obj.svd.U(:,:,1:nSVDs);
+                U = reshape(U, [], nSVDs);
+                S = diag(obj.svd.S(1:nSVDs));
+                tmp = [obj.fusi.svd];
+                V = cell2mat(reshape({tmp.V}, [], 1));
+                V = V(:, 1:nSVDs);
+                meanFrame = obj.svd.meanFrame;
+                clear tmp;
+            else
+                fprintf('Let''s extract first %g SVDs ..', nSVDs)
+                svdTic = tic;
+                meanFrame = median(oneBigDopplerMovie, 3);
+                oneBigDopplerMovie = bsxfun(@minus, oneBigDopplerMovie, meanFrame);
+                [U, S, V] = nanSVD(oneBigDopplerMovie, nSVDs);
+                clear oneBigDopplerMovie;
+                fprintf('. done (%1.0f seconds)\n', toc(svdTic));
+            end
             
             fprintf('Reconstructing Doppler movie from first %g SVDs ..', nSVDs);
             reconstructTic = tic;
@@ -514,7 +525,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             fprintf('Calculating displacement fields and registering Doppler data: \n')
             svdMeanFrame = median(svdDoppler, 3);
             regDoppler = zeros(size(svdDoppler), 'single');
-            obj.D = zeros(nz, nx, 2, nt, 'single');
+            D = zeros(nz, nx, 2, nt, 'single');
             doppler = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
             doppler(isnan(doppler)) = 0;
             nChar = 0;
@@ -525,13 +536,17 @@ classdef YStack < handle & matlab.mixin.Copyable
             for iFrame = 1:nt
                 fprintf(repmat('\b', 1, nChar));
                 minLeft = toc(regTic)/(iFrame-1)*(nt-iFrame+1)/60;
-                endTime = datestr(now + minLeft/60/24, 'HH:MM:SS');
+                if isfinite(minLeft)
+                    endTime = datestr(now + minLeft/60/24, 'HH:MM:SS');
+                else
+                    endTime = datestr(now, 'HH:MM:SS');
+                end
                 nChar = fprintf('Registering frame %g/%g (%3.1f minutes left [%s]) ..', ...
                     iFrame, nt, minLeft, endTime);
                 DF = imregdemons(svdDoppler(:,:,iFrame), svdMeanFrame, nIter, ...
                     'AccumulatedFieldSmoothing', AFS, 'DisplayWaitbar', false);
                 regDoppler(:,:,iFrame) = imwarp(doppler(:,:,iFrame), DF, 'linear', 'FillValues', NaN);
-                obj.D(:, :, :, iFrame) = DF;
+                D(:, :, :, iFrame) = DF;
             end
             regDoppler(repmat(any(isnan(regDoppler), 3), 1, 1, nt)) = NaN;
             fprintf('. done (%3.1f minutes)\n', toc(regTic)/60);
@@ -547,7 +562,11 @@ classdef YStack < handle & matlab.mixin.Copyable
                 obj.fusi(iFus).regDoppler = regDoppler(:,:,idx);
                 % apply the same mask as for the original doppler
                 obj.fusi(iFus).regDoppler(isnan(obj.fusi(iFus).doppler)) = NaN;
+                obj.fusi(iFus).D = D(:, :, :, idx);
             end
+            obj.regParams.nSVDs = nSVDs;
+            obj.regParams.nIter = nIter;
+            obj.regParams.AFS = AFS;
             fprintf('. done (%3.1f seconds)\n', toc(divTic));
             
             if ~isempty(obj.svd.U)
@@ -555,6 +574,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             else
                 nSVDs = nSVDsFinal;
             end
+            
             fprintf('Performing SVD decomposition on registered data (%g SVDs) ..', nSVDs);
             svdTic = tic;
             obj.svdDecomposition(nSVDs, 1);
@@ -585,6 +605,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             [nz, nx, nSVDs] = size(U);
             Uflat = reshape(U, nz*nx, nSVDs);
             mov = Uflat * diag(S) * V';
+            mov = reshape(mov, nz, nx, []);
             [Unew, Snew, Vnew] = nanSVD(mov, nSVDs);
             if reg
                 obj.svdReg.UdII = reshape(Unew, nz, nx, nSVDs);
@@ -605,6 +626,23 @@ classdef YStack < handle & matlab.mixin.Copyable
                     obj.fusi(iFus).svd.VdII = Vnew(idx, :);
                 end
             end
+        end
+        
+        function processFastDoppler(obj)
+            % register fast doppler
+            nFusi = length(obj.fusi);
+            for iFus = 1:nFusi
+                obj.fusi(iFus).regFastDoppler;
+            end
+            % calculate fast dII from registered 
+            % project fast dII on svdReg.UdII
+        end
+        
+        function saveLite(obj, filename)
+            % remove raw doppler (fast + slow)
+            % remove dII (fast + slow)
+            % remove displacement fields
+            % save with a filename provided, avoid overwriting
         end
         
     end
