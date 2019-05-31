@@ -393,6 +393,7 @@ classdef YStack < handle & matlab.mixin.Copyable
                 nanMask = single(obj.mask(iMask).bw);
                 nanMask(~nanMask) = NaN;
                 obj.fusi(iFus).doppler = bsxfun(@times, obj.fusi(iFus).doppler, nanMask);
+                obj.fusi(iFus).dopplerFast = bsxfun(@times, obj.fusi(iFus).dopplerFast, nanMask);
             end
         end
         
@@ -632,6 +633,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             % register fast doppler
             nFusi = length(obj.fusi);
             for iFus = 1:nFusi
+                fprintf('Registering fus #%1.0f/%1.0f\n', iFus, nFusi);
                 obj.fusi(iFus).regFastDoppler;
             end
             % calculate fast dII from registered 

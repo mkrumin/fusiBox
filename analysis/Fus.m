@@ -6,6 +6,7 @@ classdef Fus < handle
         doppler = [];
         dopplerFast = [];
         regDoppler = []; % registered Doppler data
+        regDopplerFast = [];
         xAxis = [];
         zAxis = [];
         yCoord = [];
@@ -29,10 +30,12 @@ classdef Fus < handle
         dII = []; % delta I/I0 of the doppler signal
         dIIFast = []; % delta I/I0 of the fast doppler signal
         regDII = []; % delta I/I0 of the doppler signal post-registration
+        regDIIFast = [];
         retinotopyMaps;
         retinotopyMapsFast;
-        svd = struct('V', []);
-        svdReg = struct('V', []);
+        svd = struct('V', [], 'VdII', [], 'VFast', [], 'VdIIFast', []);
+        svdReg = struct('V', [], 'VdII', [], 'VFast', [], 'VdIIFast', []);
+        D = []; % Displacement field used for registration
     end
     
     methods
@@ -132,8 +135,14 @@ classdef Fus < handle
                 obj.regDII = bsxfun(@rdivide, bsxfun(@minus, obj.regDoppler, I0), I0);
             end
             idx = ~obj.outlierFrameIdxFast;
-            I0Fast = median(obj.dopplerFast(:, :, idx), 3);
+%             I0Fast = median(obj.dopplerFast(:, :, idx), 3);
+            % we should use the same meanFrame for slow and fast data
+            I0Fast = median(obj.doppler(:, :, idx), 3);
             obj.dIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.dopplerFast, I0Fast), I0Fast);
+            if ~isempty(obj.regDopplerFast)
+                I0 = median(obj.regDoppler(:, :, idx), 3);
+                obj.regDIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.regDopplerFast, I0), I0);
+            end
         end
         
         function getRetinotopy(obj)
@@ -181,7 +190,7 @@ classdef Fus < handle
             
             if nargin < 2 || isempty(iSVD)
                 if reg
-                    mov = obj.regDoppler;
+                    mov = obj.regDopplerFast;
                 else
                     mov = obj.doppler;
                 end
@@ -218,14 +227,14 @@ classdef Fus < handle
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
-                    tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
+%                     tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
                     caxis(clim);
                     cb = colorbar;
                     cb.Label.String = 'log_{10}(I)';
                     axis equal tight off;
                 else
                     im.CData = mov(:,:,iFrame);
-                    tit.String = sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames));
+%                     tit.String = sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames));
                 end
                 drawnow;
 %                 pause(0.05);
@@ -302,6 +311,32 @@ classdef Fus < handle
                     F(iFrame) = getframe(hFig);
                 end
             end
+        end
+        
+        function regFastDoppler(obj)
+                nSlowFrames = size(obj.doppler, 3);
+                nFastFrames = size(obj.dopplerFast, 3);
+                frameRatio = nFastFrames/nSlowFrames;
+                obj.regDopplerFast = zeros(size(obj.dopplerFast), 'single');
+                nanIdx = isnan(obj.yStack.svdReg.meanFrame);
+                nanMask = ones(size(nanIdx));
+                nanMask(nanIdx) = NaN;
+                nChar = 0;
+                for iSlowFrame = 1:nSlowFrames
+                    if mod(iSlowFrame, 100) == 1
+                        fprintf(repmat('\b', 1, nChar));
+                        nChar = fprintf('Registering frame %1.0f/%1.0f', iSlowFrame, nSlowFrames);
+                    end
+                    DF = obj.D(:,:,:,iSlowFrame);
+                    idx = [1:frameRatio] + (iSlowFrame -1) * frameRatio;
+                    raw = obj.dopplerFast(:,:,idx);
+                    raw(isnan(raw)) = 0;
+                    frames = imwarp(raw, DF, 'linear', 'FillValues', NaN);
+                    frames = bsxfun(@times, frames, nanMask);
+                    obj.regDopplerFast(:,:,idx) = frames;
+                end
+                fprintf('\n');
+
         end
         
     end
