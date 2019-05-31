@@ -134,7 +134,7 @@ classdef Fus < handle
                 I0 = median(obj.regDoppler(:, :, idx), 3);
                 obj.regDII = bsxfun(@rdivide, bsxfun(@minus, obj.regDoppler, I0), I0);
             end
-            idx = ~obj.outlierFrameIdxFast;
+%             idx = ~obj.outlierFrameIdxFast;
 %             I0Fast = median(obj.dopplerFast(:, :, idx), 3);
             % we should use the same meanFrame for slow and fast data
             I0Fast = median(obj.doppler(:, :, idx), 3);
@@ -336,7 +336,10 @@ classdef Fus < handle
                     obj.regDopplerFast(:,:,idx) = frames;
                 end
                 fprintf('\n');
-
+        end
+        
+        function projectFastDoppler(obj)
+            
         end
         
     end

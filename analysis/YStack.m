@@ -636,8 +636,16 @@ classdef YStack < handle & matlab.mixin.Copyable
                 fprintf('Registering fus #%1.0f/%1.0f\n', iFus, nFusi);
                 obj.fusi(iFus).regFastDoppler;
             end
-            % calculate fast dII from registered 
-            % project fast dII on svdReg.UdII
+            % calculate fast dII from registered
+            obj.getdII; % not efficient (will recalculate all the dI/I, but reusing code
+            % project fast doppler and dII on U and UdII 
+            % (registered and non-registered)
+            for iFus = 1:nFusi
+                fprintf('Projecting fast fus #%1.0f/%1.0f onto existing SVD bases\n', iFus, nFusi);
+                obj.fusi(iFus).projectFastDoppler;
+            end
+            
+            
         end
         
         function saveLite(obj, filename)
