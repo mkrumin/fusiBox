@@ -662,7 +662,17 @@ classdef YStack < handle & matlab.mixin.Copyable
                 obj.fusi(iFus).regDIIFast = [];
                 % remove displacement fields
                 obj.fusi(iFus).D = [];
+                % TEST remove all the unregistered decomposition data
+                obj.fusi(iFus).svd.V = [];
+                obj.fusi(iFus).svd.VFast = [];
+                obj.fusi(iFus).svd.VdII = [];
+                obj.fusi(iFus).svd.VdIIFast = [];
             end
+            % TEST remove all the unregistered decomposition data
+            obj.svd.U = [];
+            obj.svd.UdII = [];
+            obj.svd.S = [];
+            obj.svd.SdII = [];
             % save with a filename provided, avoid overwriting
             YSLite = obj;
             save(filename, 'YSLite', '-v7.3');

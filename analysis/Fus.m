@@ -423,7 +423,7 @@ classdef Fus < handle
                 X = X(~nanIdx, :);
                 % deriving from : X = U * diag(S) * V';
                 % diag(1/S) * U' * X = V';
-                V = (diag(1/S) * U' * X)';
+                V = (diag(1./S) * U' * X)';
             end
         end
         
