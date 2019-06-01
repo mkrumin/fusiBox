@@ -649,10 +649,25 @@ classdef YStack < handle & matlab.mixin.Copyable
         end
         
         function saveLite(obj, filename)
-            % remove raw doppler (fast + slow)
-            % remove dII (fast + slow)
-            % remove displacement fields
+            nFusi = length(obj.fusi);
+            for iFus = 1:nFusi
+                % remove raw doppler (fast + slow)
+                obj.fusi(iFus).doppler = [];
+                obj.fusi(iFus).dopplerFast = [];
+                % remove dII (fast + slow)
+                obj.fusi(iFus).dII = [];
+                obj.fusi(iFus).dIIFast = [];
+                % remove all the registered data and dII
+                obj.fusi(iFus).regDoppler = [];
+                obj.fusi(iFus).regDopplerFast = [];
+                obj.fusi(iFus).regDII = [];
+                obj.fusi(iFus).regDIIFast = [];
+                % remove displacement fields
+                obj.fusi(iFus).D = [];
+            end
             % save with a filename provided, avoid overwriting
+            YSLite = obj;
+            save(filename, 'YSLite', '-v7.3');
         end
         
     end

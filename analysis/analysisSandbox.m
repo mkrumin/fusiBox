@@ -74,29 +74,33 @@ F = createExpMovie(expData);
 YS.getMask;
 YS.applyMask;
 % do the preprocessing
-nSVDs = 400;
+nSVDs = 500;
 fprintf('Peforming SVD decomposition (%g SVDs) ..', nSVDs);
 svdTic = tic;
 YS.svdDecomposition(nSVDs);
 fprintf('. done (%1.0f seconds)\n', toc(svdTic));
-fprintf('Rotating the dII SVD decomposition basis ..');
+fprintf('Rotating the dI/I SVD decomposition basis ..');
 diiTic = tic;
 YS.svddII(0);
 fprintf('. done (%1.0f seconds)\n', toc(diiTic));
-fprintf('Performing doppler registration:');
+fprintf('Performing doppler registration:\n');
 regTic = tic;
 YS.regDoppler;
 t = toc(regTic); 
 h = floor(t/3600); m = floor(mod(t,3600)/60); s = floor(mod(t, 60));
-fprintf('Total time spent for registration - %02.0fh%02.0fm%02.0fs\n', h, m, s)
+fprintf('Total time spent on registration - %02.0fh%02.0fm%02.0fs\n', h, m, s)
 fprintf('Detecting outlier frames ..');
 outTic = tic;
 YS.getOutliers(Inf);
-fprintf(' . done (%3.1f seconds)\n', toc(outTic));
+fprintf('. done (%3.1f seconds)\n', toc(outTic));
+fprintf('Processing fast doppler:\n');
+fastTic = tic;
+YS.processFastDoppler;
+fprintf('Done processing fast doppler in %1.0f seconds', toc(fastTic));
 fprintf('Calculating dII directly from doppler movies ..');
 diiTic = tic;
 YS.getdII;
-fprintf(' . done (%3.1f seconds)\n', toc(diiTic));
+fprintf('. done (%3.1f seconds)\n', toc(diiTic));
 t = toc(svdTic); 
 h = floor(t/3600); m = floor(mod(t,3600)/60); s = floor(mod(t, 60));
 fprintf('Total time spent preprocessing the whole dataset - %02.0fh%02.0fm%02.0fs\n', h, m, s)
@@ -104,16 +108,21 @@ fprintf('Total time spent preprocessing the whole dataset - %02.0fh%02.0fm%02.0f
 %%
 % Fall = struct('cdata', [], 'colormap', []);
 Fall = cell(2, 2);
+nSVDs = size(YS.svd.U, 3);
 Fall{1} = YS.fusi(1).movie;
 Fall{2} = YS.fusi(1).movie([], 1);
-Fall{3} = YS.fusi(1).movie(1:500);
+Fall{3} = YS.fusi(1).movie(1:nSVDs);
 Fall{4} = YS.fusi(1).movie(1:500, 1);
 %%
 Fall = cell(2, 2);
+nSVDs = size(YS.svd.U, 3);
 Fall{1} = YS.fusi(1).dIIMovie;
 Fall{2} = YS.fusi(1).dIIMovie([], 1);
-Fall{3} = YS.fusi(1).dIIMovie(1:500);
-Fall{4} = YS.fusi(1).dIIMovie(1:500, 1);
+Fall{3} = YS.fusi(1).dIIMovie(1:nSVDs);
+Fall{4} = YS.fusi(3).dIIMovie(3:30, 1);
+
+%%
+YS.plotSVDs(1:30, 1, 1)
 
 %%
 F1 = Ffull;

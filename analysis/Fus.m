@@ -190,7 +190,7 @@ classdef Fus < handle
             
             if nargin < 2 || isempty(iSVD)
                 if reg
-                    mov = obj.regDopplerFast;
+                    mov = obj.regDoppler;
                 else
                     mov = obj.doppler;
                 end
@@ -204,7 +204,7 @@ classdef Fus < handle
                 else
                     U = obj.yStack.svd.U;
                     S = obj.yStack.svd.S;
-                    V = obj.svd.V;
+                    V = obj.svd.VFast;
                     meanFrame = obj.yStack.svd.meanFrame;
                 end
                 [nZ, nX, ~] = size(U);
@@ -339,7 +339,43 @@ classdef Fus < handle
         end
         
         function projectFastDoppler(obj)
+            % projecting raw fast Doppler
+            X = obj.dopplerFast;
+            X = bsxfun(@minus, X, obj.yStack.svd.meanFrame);
+            U = obj.yStack.svd.U;
+            S = obj.yStack.svd.S;
+            obj.svd.VFast = getV(X, U, S);
+
+            % projecting registered fast Doppler
+            X = obj.regDopplerFast;
+            X = bsxfun(@minus, X, obj.yStack.svdReg.meanFrame);
+            U = obj.yStack.svdReg.U;
+            S = obj.yStack.svdReg.S;
+            obj.svdReg.VFast = getV(X, U, S);
             
+            % projecting raw fast dII
+            X = obj.dIIFast;
+            U = obj.yStack.svd.UdII;
+            S = obj.yStack.svd.SdII;
+            obj.svd.VdIIFast = getV(X, U, S);
+
+            % projecting registered fast dII
+            X = obj.regDIIFast;
+            U = obj.yStack.svdReg.UdII;
+            S = obj.yStack.svdReg.SdII;
+            obj.svdReg.VdIIFast = getV(X, U, S);
+
+            function V = getV(X, U, S)
+                [nz, nx, nt] = size(X);
+                X = reshape(X, nz * nx, nt);
+                U = reshape(U, nz * nx, []);
+                nanIdx = all(isnan(U), 2);
+                U = U(~nanIdx, :);
+                X = X(~nanIdx, :);
+                % deriving from : X = U * diag(S) * V';
+                % diag(1/S) * U' * X = V';
+                V = (diag(1/S) * U' * X)';
+            end
         end
         
     end
