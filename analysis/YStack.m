@@ -644,8 +644,6 @@ classdef YStack < handle & matlab.mixin.Copyable
                 fprintf('Projecting fast fus #%1.0f/%1.0f onto existing SVD bases\n', iFus, nFusi);
                 obj.fusi(iFus).projectFastDoppler;
             end
-            
-            
         end
         
         function saveLite(obj, filename)

@@ -182,29 +182,49 @@ classdef Fus < handle
 %             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
         
-        function F = movie(obj, iSVD, reg)
+        function F = movie(obj, iSVD, reg, fast)
             
-            if nargin < 3
+            if nargin < 4 
+                fast = false;
+            end
+            
+            if nargin < 3 || isempty(reg)
                 reg = false;
             end
             
             if nargin < 2 || isempty(iSVD)
                 if reg
-                    mov = obj.regDoppler;
+                    if fast
+                        mov = obj.regDopplerFast;
+                    else
+                        mov = obj.regDoppler;
+                    end
                 else
-                    mov = obj.doppler;
+                    if fast
+                        mov = obj.dopplerFast;
+                    else
+                        mov = obj.doppler;
+                    end
                 end
             else
                 nSVDs2Use = length(iSVD);
                 if reg
                     U = obj.yStack.svdReg.U;
                     S = obj.yStack.svdReg.S;
-                    V = obj.svdReg.V;
+                    if fast
+                        V = obj.svdReg.VFast;
+                    else
+                        V = obj.svdReg.V;
+                    end
                     meanFrame = obj.yStack.svdReg.meanFrame;
                 else
                     U = obj.yStack.svd.U;
                     S = obj.yStack.svd.S;
-                    V = obj.svd.VFast;
+                    if fast
+                        V = obj.svd.VFast;
+                    else
+                        V = obj.svd.V;
+                    end
                     meanFrame = obj.yStack.svd.meanFrame;
                 end
                 [nZ, nX, ~] = size(U);
@@ -220,51 +240,76 @@ classdef Fus < handle
 %             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
             hFig = figure;
             colormap hot;
-            if nargout > 0
+            if nargout > 0 && ~fast
                 F = struct('cdata', [], 'colormap', []);
                 F = repmat(F, nFrames, 1);
+            end
+            if fast
+                tt = obj.tAxisFast;
+            else
+                tt = obj.tAxis;
             end
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
-%                     tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
+                    tit = title(sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames)));
                     caxis(clim);
                     cb = colorbar;
                     cb.Label.String = 'log_{10}(I)';
                     axis equal tight off;
                 else
                     im.CData = mov(:,:,iFrame);
-%                     tit.String = sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames));
+                    tit.String = sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames));
                 end
                 drawnow;
 %                 pause(0.05);
-                if nargout > 0
+                if nargout > 0 && ~fast
                     F(iFrame) = getframe(hFig);
                 end
             end
         end
         
-        function F = dIIMovie(obj, iSVD, reg)
+        function F = dIIMovie(obj, iSVD, reg, fast)
             
-            if nargin < 3
+            if nargin < 4 || isempty(fast)
+                fast = false;
+            end
+            
+            if nargin < 3 || isempty(reg)
                 reg = false;
             end
 
             if nargin < 2 || isempty(iSVD)
                 if reg
-                    mov = obj.regDII;
+                    if fast
+                        mov = obj.regDIIFast;
+                    else
+                        mov = obj.regDII;
+                    end
                 else
-                    mov = obj.dII;
+                    if fast
+                        mov = obj.dIIFast;
+                    else
+                        mov = obj.dII;
+                    end
                 end
             else
                 if reg
                     U = obj.yStack.svdReg.UdII;
                     S = obj.yStack.svdReg.SdII;
-                    V = obj.svdReg.VdII;
+                    if fast
+                        V = obj.svdReg.VdIIFast;
+                    else
+                        V = obj.svdReg.VdII;
+                    end
                 else
                     U = obj.yStack.svd.UdII;
                     S = obj.yStack.svd.SdII;
-                    V = obj.svd.VdII;
+                    if fast
+                        V = obj.svd.VdIIFast;
+                    else
+                        V = obj.svd.VdII;
+                    end
                 end
                 nSVDs2Use = length(iSVD);
                 [nZ, nX, ~] = size(U);
@@ -288,26 +333,30 @@ classdef Fus < handle
 %             colormap hot
             mov(isnan(mov)) = 0;
 
-            if nargout > 0
+            if nargout > 0 && ~fast
                 F = struct('cdata', [], 'colormap', []);
                 F = repmat(F, nFrames, 1);
             end
-
+            if fast
+                tt = obj.tAxisFast;
+            else
+                tt = obj.tAxis;
+            end
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
-                    tit = title(sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames)));
+                    tit = title(sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames)));
                     caxis(clim);
                     cb = colorbar;
                     cb.Label.String = '\DeltaI/I_0';
                     axis equal tight off;
                 else
                     im.CData = mov(:,:,iFrame);
-                    tit.String = sprintf('%3.1f/%2.0f [s]', obj.tAxis(iFrame), obj.tAxis(nFrames));
+                    tit.String = sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames));
                 end
                 drawnow;
 %                 pause(0.08);
-                if nargout > 0 
+                if nargout > 0  && ~fast
                     F(iFrame) = getframe(hFig);
                 end
             end
