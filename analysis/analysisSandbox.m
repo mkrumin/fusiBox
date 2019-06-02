@@ -44,15 +44,16 @@ allExpRefs = {...
 %% This is the manual stage of adjusting the mask
 
 % load the dataset
-iExp = 3;
+iExp = 11;
 ExpRef = allExpRefs{iExp};
 [animalName, expDate, expNumber] = dat.parseExpRef(ExpRef);
 fileName = [ExpRef, '_YS.mat'];
-fileNameLite = [ExpRef, '_YSLite.mat'];
+fileNameMask = [ExpRef, '_YSMask.mat'];
 folderName = fullfile(dataFolder, animalName);
 
 % do the following steps iteratively until happy with the mask
 load(fullfile(folderName, fileName));
+
 % YS.mask.poly = poly; % do this if only adjusting a mask
 YS.fusi(1).movie;
 YS.getMask; 
@@ -62,9 +63,30 @@ YS.fusi(1).movie;
 
 % when happy with the mask, save it
 % this file will be used later for full data processing
-YS.saveLite(fullfile(folderName, fileNameLite));
+% remove Timeline data, it takes too much unnecessary space
+for iFus = 1:length(YS.fusi)
+    YS.fusi(iFus).TL = [];
+end
+% save the light version (no doppler data) of the YStack
+YS.saveLite(fullfile(folderName, fileNameMask));
 
-
+%% After we have the masks, we can run the following code automatically
+dataFolder = 'G:\fUSiData\';
+for iExp = 4:11
+    ExpRef = allExpRefs{iExp};
+    fprintf('\nProcessing dataset %s:\n', ExpRef);
+    expTic = tic;
+    animalName = dat.parseExpRef(ExpRef);
+    dataFile = fullfile(dataFolder, animalName, [ExpRef, '_YS.mat']);
+    maskFile = fullfile(dataFolder, animalName, [ExpRef, '_YSMask.mat']);
+    saveFile = fullfile(dataFolder, animalName, [ExpRef, '_YSLite.mat']);
+    preprocessYS(dataFile, saveFile, maskFile);
+    t = toc(expTic);
+    h = floor(t/3600); m = floor(mod(t,3600)/60); s = floor(mod(t, 60));
+    fprintf('\nTotal time taken to process %s : %01.0fh%01.0fm%01.0fs\n', ...
+        ExpRef, h, m, s);
+end
+    
 %% A skeleton script for full data preprocessing
 % Mask the brain
 YS.getMask;
