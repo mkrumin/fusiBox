@@ -1,75 +1,71 @@
 % analysis script
 
-allExpRefs = cell(1);
+dataFolder = 'G:\fUSiData';
+allExpRefs = {...
+    '2019-04-02_1716_PC036'; ...
+    '2019-04-04_2133_PC036'; ...
+    '2019-04-08_2359_PC036'; ...
+    '2019-04-09_2359_PC036'; ...
+    '2019-04-10_2327_PC036'; ...
+    '2019-04-12_2124_PC036'; ...
+    '2019-04-15_2306_PC036'; ...
+    '2019-05-03_1757_PC036'; ...
+    '2019-04-11_2349_PC037'; ...
+    '2019-04-12_2359_PC037'; ...
+    '2019-04-16_2117_PC037'; ...
+    '2019-05-07_2105_PC037'; ...
+    '2019-05-08_2042_PC037'; ...
+    '2019-05-10_1912_PC037'; ...
+    '2019-05-13_1753_PC037'; ...
+    '2019-05-15_1759_PC037'; ...
+    '2019-05-16_1434_PC037'; ...
+    '2019-05-17_1853_PC037'; ...
+    '2019-05-20_1436_PC037'; ...
+    '2019-05-21_1435_PC037'; ...
+    '2019-05-22_1518_PC037'; ...
+    '2019-05-24_1328_PC037'; ...
+    '2019-05-28_1826_PC037'; ...
+    '2019-05-29_1357_PC037'; ...
+    '2019-05-14_2317_PC041'; ...
+    '2019-05-15_2302_PC041'; ...
+    '2019-05-16_1733_PC041'; ...
+    '2019-05-17_2255_PC041'; ...
+    '2019-05-20_1719_PC041'; ...
+    '2019-05-21_1926_PC041'; ...
+    '2019-05-22_2327_PC041'; ...
+    '2019-05-23_1934_PC041'; ...
+    '2019-05-24_1853_PC041'; ...
+    '2019-05-28_2146_PC041'; ...
+    '2019-05-29_1907_PC041'; ...
+    '2019-05-30_2130_PC041'; ...
+    '2019-05-31_1953_PC041'; ...    
+    };
 
-% for iExp=1:3
-%     allExpRefs{iExp} = sprintf('2018-11-16_%1.0f_CR011', iExp);
-% %     allExpRefs{iExp} = sprintf('2018-11-01_%1.0f_CR011', iExp);
-% end
-% yPosition = [4.6 4.4 4.8];
+%% This is the manual stage of adjusting the mask
 
-% for iExp=[1:7, 9:12]
-% %     allExpRefs{iExp} = sprintf('2018-11-16_%1.0f_CR011', iExp);
-%     allExpRefs{iExp} = sprintf('2018-11-23_%1.0f_CR011', iExp);
-% end
-
-% for iExp=1:5
-%     allExpRefs{iExp} = sprintf('2018-11-28_%1.0f_CR011', iExp);
-% end
-
-% for iExp=1:8
-%     allExpRefs{iExp} = sprintf('2018-11-30_%1.0f_CR013_DRI2', iExp);
-% end
-
-for iExp=1:8
-    allExpRefs{iExp} = sprintf('2019-02-15_%1.0f_CR_Alzheimers1', iExp+1);
-end
-
-allExpRefs = allExpRefs(~cellfun(@isempty,  allExpRefs));
-yPosition = NaN(size(allExpRefs));
-
-%% Perform the analysis for each slice independently
-
-iExp = 6;
+% load the dataset
+iExp = 3;
 ExpRef = allExpRefs{iExp};
-fprintf('Loading data for %s...\n', ExpRef);
-t = tic;
-expData = getExpData(ExpRef);
-if ~isfield(expData.doppler, 'motorPosition')
-    expData.doppler.motorPosition = yPosition(iExp);
-end
-fprintf('\t...done(%g s)\n', toc(t));
+[animalName, expDate, expNumber] = dat.parseExpRef(ExpRef);
+fileName = [ExpRef, '_YS.mat'];
+fileNameLite = [ExpRef, '_YSLite.mat'];
+folderName = fullfile(dataFolder, animalName);
 
-%% let's try and preprocess the movie, exclude atrefactual frames etc.
+% do the following steps iteratively until happy with the mask
+load(fullfile(folderName, fileName));
+% YS.mask.poly = poly; % do this if only adjusting a mask
+YS.fusi(1).movie;
+YS.getMask; 
+poly = YS.mask.poly;
+YS.applyMask;
+YS.fusi(1).movie;
 
-expData.idxOutliers = getOutliers(expData.doppler.frames);
+% when happy with the mask, save it
+% this file will be used later for full data processing
+YS.saveLite(fullfile(folderName, fileNameLite));
 
-%% get stim-triggered average movie
 
-mov = expData.doppler.frames;
-xIdx = expData.doppler.xAxis>=2 & expData.doppler.xAxis <=10.8;
-zIdx = expData.doppler.zAxis>=0.1;
-mov = mov(zIdx, xIdx, ~expData.idxOutliers);
-tAxis = expData.fusiFrameTimes(~expData.idxOutliers);
-
-I0 = prctile(mov, 50, 3);
-mov = bsxfun(@minus, mov, I0);
-mov = bsxfun(@rdivide, mov, I0);
-
-% movSVD = rmSVD(mov, 100);
-% mov = mov - movSVD;
-
-staMovies = getSTA(tAxis, mov, expData);
-[Fmean, Fall] = showSTAMovies(staMovies, expData);
-
-stimCorr = getStimCorr(staMovies);
-showStimCorr(stimCorr, staMovies, expData)
-
-%%
-
-F = createExpMovie(expData);
-
-%% A sceleton script for full data preprocessing
+%% A skeleton script for full data preprocessing
 % Mask the brain
 YS.getMask;
 YS.applyMask;
@@ -96,7 +92,7 @@ fprintf('. done (%3.1f seconds)\n', toc(outTic));
 fprintf('Processing fast doppler:\n');
 fastTic = tic;
 YS.processFastDoppler;
-fprintf('Done processing fast doppler in %1.0f seconds', toc(fastTic));
+fprintf('Done processing fast doppler in %1.0f seconds\n', toc(fastTic));
 fprintf('Calculating dII directly from doppler movies ..');
 diiTic = tic;
 YS.getdII;
@@ -124,13 +120,6 @@ Fall{4} = YS.fusi(3).dIIMovie(3:30, 1);
 %%
 YS.plotSVDs(1:30, 1, 1)
 
-%%
-F1 = Ffull;
-F2 = F500;
-for iFrame=1:length(Ffull)
-    F(iFrame).cdata = [Ffull(iFrame).cdata, F500(iFrame).cdata];
-    F(iFrame).colormap = [];
-end
 %%
 tic
 % F = Ffull;
