@@ -389,7 +389,7 @@ classdef YStack < handle & matlab.mixin.Copyable
             for iFus = 1:nFusi
                 % assuming that all the data is already hard-cropped to the
                 % obj.boundingBox limits
-                iMask = find(obj.fusi(iFus).yCoord == [obj.mask.y]);
+                iMask = find(round(obj.fusi(iFus).yCoord, 1) == [obj.mask.y]);
                 nanMask = single(obj.mask(iMask).bw);
                 nanMask(~nanMask) = NaN;
                 obj.fusi(iFus).doppler = bsxfun(@times, obj.fusi(iFus).doppler, nanMask);
