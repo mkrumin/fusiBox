@@ -351,7 +351,7 @@ classdef YStack < handle & matlab.mixin.Copyable
         end
         
         function getMask(obj)
-            yPos = unique([obj.fusi.yCoord]);
+            yPos = unique(round([obj.fusi.yCoord], 1));
             % usually should only be one yPos, but let's code it for a
             % general scenario (i.e. several slices were acuired in the same experiment)
             for iSlice = 1:length(yPos)
@@ -662,13 +662,13 @@ classdef YStack < handle & matlab.mixin.Copyable
                 obj.fusi(iFus).regDIIFast = [];
                 % remove displacement fields
                 obj.fusi(iFus).D = [];
-                % TEST remove all the unregistered decomposition data
+                % remove all the unregistered SVD decomposition data
                 obj.fusi(iFus).svd.V = [];
                 obj.fusi(iFus).svd.VFast = [];
                 obj.fusi(iFus).svd.VdII = [];
                 obj.fusi(iFus).svd.VdIIFast = [];
             end
-            % TEST remove all the unregistered decomposition data
+            % remove all the unregistered SVD decomposition data
             obj.svd.U = [];
             obj.svd.UdII = [];
             obj.svd.S = [];
