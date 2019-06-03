@@ -646,7 +646,11 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
         end
         
-        function saveLite(obj, filename)
+        function saveLite(obj, filename, saveUnregistered)
+            if nargin < 3
+                saveUnregistered = false;
+            end
+            
             nFusi = length(obj.fusi);
             for iFus = 1:nFusi
                 % remove raw doppler (fast + slow)
@@ -663,16 +667,20 @@ classdef YStack < handle & matlab.mixin.Copyable
                 % remove displacement fields
                 obj.fusi(iFus).D = [];
                 % remove all the unregistered SVD decomposition data
-                obj.fusi(iFus).svd.V = [];
-                obj.fusi(iFus).svd.VFast = [];
-                obj.fusi(iFus).svd.VdII = [];
-                obj.fusi(iFus).svd.VdIIFast = [];
+                if ~saveUnregistered
+                    obj.fusi(iFus).svd.V = [];
+                    obj.fusi(iFus).svd.VFast = [];
+                    obj.fusi(iFus).svd.VdII = [];
+                    obj.fusi(iFus).svd.VdIIFast = [];
+                end
             end
             % remove all the unregistered SVD decomposition data
-            obj.svd.U = [];
-            obj.svd.UdII = [];
-            obj.svd.S = [];
-            obj.svd.SdII = [];
+                if ~saveUnregistered
+                    obj.svd.U = [];
+                    obj.svd.UdII = [];
+                    obj.svd.S = [];
+                    obj.svd.SdII = [];
+                end
             % save with a filename provided, avoid overwriting
             YSLite = obj;
             save(filename, 'YSLite', '-v7.3');
