@@ -91,16 +91,16 @@ switch info.instruction
         
         
     case 'BlockStart'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     case 'BlockEnd'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     case 'StimStart'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     case 'StimEnd'
-        SCAN.flagPause = false;
+%         SCAN.flagPause = false;
         fwrite(src, data);
     otherwise
         fprintf('Unknown instruction : %s', info.instruction);
