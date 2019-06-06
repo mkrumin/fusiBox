@@ -233,11 +233,10 @@ classdef Fus < handle
                 mov = reshape(mov, nZ, nX, []);
                 mov = bsxfun(@plus, mov, meanFrame);
             end
-            mov = log10(mov - min(mov(:)));
-            nFrames = size(mov, 3);
-            % calculate the clim not including the masked out regions
-            clim = prctile(mov(:), [0.01 99.99]);
-%             clim = prctile(log10(obj.doppler(:)-min(obj.doppler(:))), [0.01 99.99]);
+%             mov = log10(mov - min(mov(:)));
+%             clim = prctile(mov(:), [0.01 99.99]);
+            mov = sqrt(mov - min(mov(:)));
+            clim = prctile(mov(:), [1 99]);
             hFig = figure;
             colormap hot;
             if nargout > 0 && ~fast
@@ -249,6 +248,7 @@ classdef Fus < handle
             else
                 tt = obj.tAxis;
             end
+            nFrames = size(mov, 3);
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
