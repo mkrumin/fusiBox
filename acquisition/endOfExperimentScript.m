@@ -1,5 +1,5 @@
 animalName = 'PC041';
-expDate = '2019-05-23';
+expDate = '2019-06-06';
 
 question = sprintf('Process data of %s for %s?', animalName, expDate);
 button = questdlg(question,'fUSi post exp script','OK','Cancel','Cancel');
@@ -65,6 +65,7 @@ fprintf('\nTotal time taken to bin BF: %1.0f seconds\n\n', toc(tStart));
 %% copy files to server
 serverFolderName = fullfile(p.mainRepository, animalName, expDate);
 fprintf('Copying the data to the server (%s) ..', serverFolderName);
+tic;
 [st, msg, msgID] = copyfile(localFolderName, serverFolderName);
 if st
     fprintf('. success!\n')
@@ -77,3 +78,36 @@ else
     fprintf('Error message ID: %s\n', msgID);
     return;
 end
+
+%% move fullData files to 'processed' folder
+
+keyboard;
+[folderName, fileStem] = dat.expPath(ExpRefs{1}, 'main', 'local');
+folderName = strrep(folderName, localFolderName, localBackupFolderName);
+fileName = sprintf('%s_fus.mat', fileStem);
+fullFileName = fullfile(folderName, fileName);
+d = load(fullFileName);
+folderFullData = d.doppler.params.folderFullData;
+
+
+fullDataFolderName = fullfile(folderFullData, animalName, expDate);
+processedFolderName = strrep(fullDataFolderName, folderFullData, fullfile(folderFullData, 'Processed'));
+
+fprintf('Moving full processed data to %s ..', processedFolderName);
+
+tic;
+[st, msg, msgID] = movefile(fullDataFolderName, processedFolderName);
+
+if st
+    fprintf('. success!\n')
+    fprintf('Data successfully moved to %s\n', processedFolderName);
+    toc;
+else
+    fprintf('. fail!\n')
+    fprintf('There was some issue moving the data :\n');
+    fprintf('Error message: %s\n', msg);
+    fprintf('Error message ID: %s\n', msgID);
+    return;
+end
+
+
