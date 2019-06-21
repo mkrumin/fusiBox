@@ -486,13 +486,23 @@ classdef YStack < handle & matlab.mixin.Copyable
             end
         end
         
-        function regDoppler(obj)
+        function regDoppler(obj, regPars)
             oneBigDopplerMovie = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
             [nz, nx, nt] = size(oneBigDopplerMovie);
             fprintf('Total %g frames\n', nt);
-            nSVDs = 200; % for initial svd denoising pre-registration
-            nIter = 25; % number of iterations for Displacement Field estimation
-            AFS = 1; % 'Accumulated Field Smoothing' parameter
+            if nargin < 2
+                nSVDs = 500; % for initial svd denoising pre-registration
+                nIter = 25; % number of iterations for Displacement Field estimation
+                AFS = 2; % 'Accumulated Field Smoothing' parameter
+                pow = 0.5; % power used for stretching the dynamic range of doppler data
+                cutoffLevel = 0.3; %everything will become 0 below this level
+            else
+                nSVDs = regPars.nSVDs;
+                nIter = regPars.nIter; 
+                AFS = regPars.AFS; 
+                pow = regPars.pow; 
+                cutoffLevel = regPars.cutoffLevel; 
+            end
             nSVDsFinal = 500; % for final decomposition
             if isfield(obj.svd, 'U') && (size(obj.svd.U, 3) >= nSVDs)
                 fprintf('We already have first %g SVDs, let''s use them\n', nSVDs)
@@ -530,13 +540,23 @@ classdef YStack < handle & matlab.mixin.Copyable
             doppler = cell2mat(reshape({obj.fusi.doppler}, 1, 1, []));
             doppler(isnan(doppler)) = 0;
             nChar = 0;
-            baseline = min(min(svdDoppler(:)), min(svdMeanFrame(:)));
-            svdDoppler = log(svdDoppler - baseline + eps('single'));
-            svdMeanFrame = log(svdMeanFrame - baseline + eps('single'));
+%             baseline = min(min(svdDoppler(:)), min(svdMeanFrame(:)));
+%             svdDoppler = log(svdDoppler - baseline + eps('single'));
+%             svdMeanFrame = log(svdMeanFrame - baseline + eps('single'));
+            prc = [1 99];
+            limits = prctile(svdDoppler(:), prc);
+            svdDoppler = (svdDoppler - limits(1))/diff(limits);
+            svdMeanFrame = (svdMeanFrame - limits(1))/diff(limits);
+            svdDoppler = (max(0, min(svdDoppler, 1))).^pow;
+            svdMeanFrame = (max(0, min(svdMeanFrame, 1))).^pow;
+            svdDoppler = max(0, (svdDoppler - cutoffLevel)/(1-cutoffLevel));
+            svdMeanFrame = max(0, (svdMeanFrame - cutoffLevel)/(1-cutoffLevel));
+            
             regTic = tic;
             for iFrame = 1:nt
                 fprintf(repmat('\b', 1, nChar));
                 minLeft = toc(regTic)/(iFrame-1)*(nt-iFrame+1)/60;
+%                 minLeft = toc(regTic)/(iFrame-1)*(1000-iFrame+1)/60;
                 if isfinite(minLeft)
                     endTime = datestr(now + minLeft/60/24, 'HH:MM:SS');
                 else
@@ -568,6 +588,8 @@ classdef YStack < handle & matlab.mixin.Copyable
             obj.regParams.nSVDs = nSVDs;
             obj.regParams.nIter = nIter;
             obj.regParams.AFS = AFS;
+            obj.regParams.pow = pow;
+            obj.regParams.cutoffLevel = cutoffLevel;
             fprintf('. done (%3.1f seconds)\n', toc(divTic));
             
             if ~isempty(obj.svd.U)
