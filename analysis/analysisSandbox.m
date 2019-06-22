@@ -1,6 +1,6 @@
 % analysis script
 
-dataFolder = 'G:\fUSiData';
+dataFolder = 'F:\fUSiData';
 allExpRefs = {...
     '2019-04-02_1716_PC036'; ...
     '2019-04-04_2133_PC036'; ...
@@ -27,7 +27,7 @@ allExpRefs = {...
     '2019-05-28_1826_PC037'; ...
     '2019-05-29_1357_PC037'; ...
     '2019-05-14_2317_PC041'; ...
-    '2019-05-15_2302_PC041'; ...
+%     '2019-05-15_2302_PC041'; ...
     '2019-05-16_1733_PC041'; ...
     '2019-05-17_2255_PC041'; ...
     '2019-05-20_1719_PC041'; ...
@@ -44,7 +44,9 @@ allExpRefs = {...
 %% This is the manual stage of adjusting the mask
 
 % load the dataset
-iExp = 11;
+% first 13 datasets have no unreg data saved (up to and including
+% 2019-05-08_2042_PC037)
+iExp = 37;
 ExpRef = allExpRefs{iExp};
 [animalName, expDate, expNumber] = dat.parseExpRef(ExpRef);
 fileName = [ExpRef, '_YS.mat'];
@@ -69,10 +71,11 @@ for iFus = 1:length(YS.fusi)
 end
 % save the light version (no doppler data) of the YStack
 YS.saveLite(fullfile(folderName, fileNameMask));
+close all;
 
 %% After we have the masks, we can run the following code automatically
-dataFolder = 'G:\fUSiData\';
-for iExp = 4:11
+dataFolder = 'F:\fUSiData\';
+for iExp = 1:length(allExpRefs)
     ExpRef = allExpRefs{iExp};
     fprintf('\nProcessing dataset %s:\n', ExpRef);
     expTic = tic;
@@ -80,10 +83,13 @@ for iExp = 4:11
     dataFile = fullfile(dataFolder, animalName, [ExpRef, '_YS.mat']);
     maskFile = fullfile(dataFolder, animalName, [ExpRef, '_YSMask.mat']);
     saveFile = fullfile(dataFolder, animalName, [ExpRef, '_YSLite.mat']);
+%     if ~(exist(dataFile, 'file') && exist(maskFile, 'file'))
+%         warning('Some files are missing for %s\n', ExpRef);
+%     end
     preprocessYS(dataFile, saveFile, maskFile);
     t = toc(expTic);
     h = floor(t/3600); m = floor(mod(t,3600)/60); s = floor(mod(t, 60));
-    fprintf('\nTotal time taken to process %s : %01.0fh%01.0fm%01.0fs\n', ...
+    fprintf('\nTotal time taken to process %s : %02.0fh%02.0fm%02.0fs\n', ...
         ExpRef, h, m, s);
 end
     
