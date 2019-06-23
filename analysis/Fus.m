@@ -150,7 +150,7 @@ classdef Fus < handle
             idx = true(size(idx));
             stimPars = getStimPars(obj.protocol);
 %             mov = obj.dII(:,:,idx);
-            svdIdx = [1:100];
+            svdIdx = [1:200];
             U = obj.yStack.svdReg.UdII(:, :, svdIdx);
             S = obj.yStack.svdReg.SdII(svdIdx);
             V = obj.svdReg.VdII(:, svdIdx);
@@ -160,7 +160,10 @@ classdef Fus < handle
             obj.retinotopyMaps = getPreferenceMaps(mov(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
             
             idx = ~obj.outlierFrameIdxFast;
-            mov = obj.dIIFast(:,:,idx);
+            idx = true(size(idx));
+            V = obj.svdReg.VdIIFast(:, svdIdx);
+            mov = reshape(U, nz*nx, []) * diag(S) * V';
+            mov = reshape(mov, nz, nx, []);
             obj.retinotopyMapsFast = getPreferenceMaps(mov, obj.tAxisFast(idx) + obj.dtFast/2, ...
                 obj.stimTimes, stimPars);
         end
@@ -427,5 +430,53 @@ classdef Fus < handle
             end
         end
         
+        function [vETA, mov] = getETA(obj, evtTimes, tau, svds2use)
+            % getETA() calculates Event Triggered Average reponse
+            
+            if nargin < 3 || isempty(tau)
+                tau = -1:0.02:3;
+            end
+            [nFrames, nSVDs] = size(obj.svdReg.VdIIFast);
+            if nargin < 4
+                svds2use = 1:nSVDs;
+            else
+                nSVDs = length(svds2use);
+            end
+            nEvents = length(evtTimes);
+            weights = zeros(nFrames, length(tau), 'int16');
+            dTau = mean(diff(tau));
+            nChar = 0;
+            fprintf('Getting event timing: ');
+            for iEvent = 1:nEvents
+                fprintf(repmat('\b', 1, nChar));
+                nChar = fprintf('Event %g/%g', iEvent, nEvents);
+                % frame onset is before the end of the tau bin
+                onsetIn = obj.tAxisFast - evtTimes(iEvent) < tau + dTau/2;
+                % frame offset is after the beginning of the tau bin
+                offsetIn = obj.tAxisFast + obj.dtFast - evtTimes(iEvent) > tau - dTau/2;
+                weights = weights + int16(onsetIn & offsetIn); % frame offset is within the tau bin
+            end
+            fprintf('\n')
+            vETA = zeros(length(tau), nSVDs, 'single');
+            nChar = 0;
+            fprintf('Calculating ETA: ');
+            for iSVD = 1:nSVDs
+                fprintf(repmat('\b', 1, nChar));
+                nChar = fprintf('SVD %g/%g', iSVD, nSVDs);
+                allResponses = bsxfun(@times, single(weights), obj.svdReg.VdIIFast(:, svds2use(iSVD)));
+                meanResponse = sum(allResponses)./sum(weights);
+                vETA(:, iSVD) = meanResponse(:);
+            end
+            fprintf('\n');
+            
+            if nargout > 1
+                U = obj.yStack.svdReg.UdII(:,:,svds2use);
+                [nz, nx, ns] = size(U);
+                U = reshape(U, nz*nx, ns);
+                S = obj.yStack.svdReg.SdII(svds2use);
+                mov = U * diag(S) * vETA';
+                mov = reshape(mov, nz, nx, []);
+            end
+        end
     end
 end
