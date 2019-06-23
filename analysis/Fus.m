@@ -327,12 +327,7 @@ classdef Fus < handle
             % make clim symmetric (should be more informative when looking at dI/I0)
             clim = [-1 1]*max(abs(clim));
             hFig = figure;
-            % create a blue-white-red colormap with white == 0
-            r = [linspace(0, 1, 32), ones(1, 32)]';
-            g = [linspace(0, 1, 32), linspace(1, 0, 32)]';
-            b = flipud(r);
-            % (colormap).^(1/n) will make the white region wider
-            colormap(([r, g, b]).^(1/2));
+            colormap(bwrColormap);
 %             colormap hot
             mov(isnan(mov)) = 0;
 
