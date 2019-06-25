@@ -150,7 +150,7 @@ classdef Fus < handle
             idx = true(size(idx));
             stimPars = getStimPars(obj.protocol);
 %             mov = obj.dII(:,:,idx);
-            svdIdx = [1:200];
+            svdIdx = [1:500];
             U = obj.yStack.svdReg.UdII(:, :, svdIdx);
             S = obj.yStack.svdReg.SdII(svdIdx);
             V = obj.svdReg.VdII(:, svdIdx);
@@ -164,7 +164,7 @@ classdef Fus < handle
             V = obj.svdReg.VdIIFast(:, svdIdx);
             mov = reshape(U, nz*nx, []) * diag(S) * V';
             mov = reshape(mov, nz, nx, []);
-            obj.retinotopyMapsFast = getPreferenceMaps(mov, obj.tAxisFast(idx) + obj.dtFast/2, ...
+            obj.retinotopyMapsFast = getPreferenceMaps(mov(:,:, idx), obj.tAxisFast(idx) + obj.dtFast/2, ...
                 obj.stimTimes, stimPars);
         end
         
@@ -181,8 +181,8 @@ classdef Fus < handle
                 stimPars(iStim).xAxis = obj.xAxis;
                 stimPars(iStim).yAxis = obj.zAxis;
             end
-            plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
-%             plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
+%             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
+            plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
         end
         
         function F = movie(obj, iSVD, reg, fast)
@@ -242,6 +242,7 @@ classdef Fus < handle
             clim = prctile(mov(:), [1 99]);
             hFig = figure;
             colormap hot;
+            nFrames = size(mov, 3);
             if nargout > 0 && ~fast
                 F = struct('cdata', [], 'colormap', []);
                 F = repmat(F, nFrames, 1);
@@ -251,14 +252,13 @@ classdef Fus < handle
             else
                 tt = obj.tAxis;
             end
-            nFrames = size(mov, 3);
             for iFrame = 1:nFrames
                 if iFrame == 1
                     im = imagesc(obj.xAxis-mean(obj.xAxis), obj.zAxis-obj.zAxis(1), mov(:,:,iFrame));
                     tit = title(sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames)));
                     caxis(clim);
                     cb = colorbar;
-                    cb.Label.String = 'log_{10}(I)';
+                    cb.Label.String = 'sqrt(I)';
                     axis equal tight off;
                 else
                     im.CData = mov(:,:,iFrame);
@@ -269,6 +269,9 @@ classdef Fus < handle
                 if nargout > 0 && ~fast
                     F(iFrame) = getframe(hFig);
                 end
+%                 if iFrame >= 1000
+%                     break;
+%                 end
             end
         end
         
@@ -357,6 +360,9 @@ classdef Fus < handle
                 if nargout > 0  && ~fast
                     F(iFrame) = getframe(hFig);
                 end
+%                 if iFrame >= 1000
+%                     break;
+%                 end
             end
         end
         
