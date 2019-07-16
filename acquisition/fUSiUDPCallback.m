@@ -103,7 +103,7 @@ switch info.instruction
 %         SCAN.flagPause = false;
         fwrite(src, data);
     otherwise
-        fprintf('Unknown instruction : %s', info.instruction);
+        fprintf('Unknown instruction : %s\n', info.instruction);
         fwrite(src, data);
 end
 

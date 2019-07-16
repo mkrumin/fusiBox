@@ -1,5 +1,5 @@
-animalName = 'PC041';
-expDate = '2019-06-06';
+animalName = 'PC037';
+expDate = '2019-06-18';
 
 question = sprintf('Process data of %s for %s?', animalName, expDate);
 button = questdlg(question,'fUSi post exp script','OK','Cancel','Cancel');
@@ -81,7 +81,6 @@ end
 
 %% move fullData files to 'processed' folder
 
-keyboard;
 [folderName, fileStem] = dat.expPath(ExpRefs{1}, 'main', 'local');
 folderName = strrep(folderName, localFolderName, localBackupFolderName);
 fileName = sprintf('%s_fus.mat', fileStem);
