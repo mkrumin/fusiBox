@@ -5,13 +5,13 @@
 % For each experimental day (a single YSTack + multiple Fus objects) 
 % all the data is saved in a single file with the name (ExpRef)_YS.mat
 
-animalNames = {'PC036'; 'PC037'};
-rootDataFolder = 'G:\fUSiData\';
+animalNames = {'CR015'};
+rootDataFolder = 'F:\fUSiData\';
 nMice = length(animalNames);
 %%
 for iMouse = 1:nMice
-    fprintf('Loading data for %s \n', animalNames{iMouse})
-    summary{iMouse} = getAllFusiExps(animalNames{iMouse});
+%     fprintf('Loading data for %s \n', animalNames{iMouse})
+%     summary{iMouse} = getAllFusiExps(animalNames{iMouse});
     nYSs(iMouse) = length(summary{iMouse});    
 end
 
@@ -77,7 +77,7 @@ for iMouse = 1:nMice
             answer = questdlg(quest, 'Overwrite file?', 'Yes', 'Cancel', 'Cancel');
             switch answer
                 case 'Yes'
-                    save(filename, 'YS', '-v7.3');
+                    save(filename, 'YS', '-v7.3', '-nocompression');
                 case 'Cancel'
                     fprintf('\nSkipping saving file %s \n', filename);
                     fprintf('Will now stop on ''keyboard'' to let you save things manually and then continue on\n');
@@ -88,7 +88,7 @@ for iMouse = 1:nMice
                     keyboard;
             end
         else
-            save(filename, 'YS', '-v7.3');
+            save(filename, 'YS', '-v7.3', '-nocompression');
         end
         fprintf('. done (%1.0f seconds)\n', toc(saveTic))
         fprintf('Total for stack %s - %1.0f seconds\n\n', YS.ExpRef, toc(stackTic));
