@@ -52,7 +52,18 @@ classdef Fus < handle
             obj.yCoord = data.doppler.motorPosition;
             obj.dt = data.fusiFrameDuration;
             obj.doppler = data.doppler.frames;
-            obj.dopplerFast= cell2mat(reshape(data.doppler.fastFrames, 1, 1, []));
+%             obj.dopplerFast= cell2mat(reshape(data.doppler.fastFrames, 1, 1, []));
+            % the line above tends to consume a lot of memory, which is
+            % critical for large datsets, let's replace it with a loop
+            [nz, nx, nFrames] = size(data.doppler.frames);
+            nFastFrames = size(data.doppler.fastFrames{1}, 3);
+            obj.dopplerFast = zeros(nz, nx, nFrames * nFastFrames, class(obj.doppler));
+            for iFrame = 1:nFrames
+                indStart = (iFrame - 1) * nFastFrames + 1;
+                indEnd = iFrame * nFastFrames;
+                obj.dopplerFast(:, :, indStart:indEnd) = data.doppler.fastFrames{iFrame};
+            end
+            % done with the loop
             obj.dtFast = data.doppler.dtFastFrames;
             obj.tAxis = data.fusiFrameOnsets;
             nFastFrames = size(data.doppler.fastFrames{1}, 3);
