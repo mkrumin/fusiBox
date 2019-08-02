@@ -708,15 +708,5 @@ classdef YStack < handle & matlab.mixin.Copyable
             save(filename, 'YSLite', '-v7.3');
         end
         
-        function exportStruct(obj, filename)
-            nFus = length(obj.fusi);
-            for iFus = 1:nFus
-                % remove the property which will cause infinite recursion
-                obj.fusi(iFus).yStack = [];
-            end
-            ysStruct = makeStruct(obj);
-            save(filename, '-struct', 'ysStruct', '-v7.3', '-nocompression');
-        end
-        
     end
 end
