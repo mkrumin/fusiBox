@@ -25,6 +25,11 @@ end
 
 % parsing the protocol data - unrandomizing the sequence
 [nStims, nRepeats] = size(p.seqnums);
+if (length(frameTimes) < nStims * nRepeats)
+    % if the mpep experiment was aborted without finishing all repeats
+    nRepeats = length(frameTimes)/nStims;
+    p.seqnums = p.seqnums(1:nStims, 1:nRepeats);
+end
 
 stimTimes = cat(1, stimStartTimes(p.seqnums), stimEndTimes(p.seqnums));
 stimTimes = reshape(stimTimes, nStims, nRepeats*2);
