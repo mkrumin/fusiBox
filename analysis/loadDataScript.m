@@ -5,13 +5,13 @@
 % For each experimental day (a single YSTack + multiple Fus objects) 
 % all the data is saved in a single file with the name (ExpRef)_YS.mat
 
-animalNames = {'CR015'};
+animalNames = {'CR013_DRI2'};
 rootDataFolder = 'F:\fUSiData\';
 nMice = length(animalNames);
 %%
 for iMouse = 1:nMice
-%     fprintf('Loading data for %s \n', animalNames{iMouse})
-%     summary{iMouse} = getAllFusiExps(animalNames{iMouse});
+    fprintf('Loading data for %s \n', animalNames{iMouse})
+    summary{iMouse} = getAllFusiExps(animalNames{iMouse});
     nYSs(iMouse) = length(summary{iMouse});    
 end
 

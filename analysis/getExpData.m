@@ -84,7 +84,12 @@ nFramesAcquired = length(fusiFrameTimes);
 nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
 doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
 doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
-doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
+if isfield(doppler, 'fastFrames')
+    doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
+else
+    % for experiments, which do not have fast data
+    doppler.fastFrames = cell(0);
+end
 
 try
     eyeFilename = dat.expFilePath(ExpRef, 'eyetracking');
