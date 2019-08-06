@@ -19,3 +19,40 @@ area outside of this mask will be 'zeroed' in the subsequent analyses
 `svdReg` - spatial components of the SVD decomposition (if was performed) of the **registered** data  
 `regParams` - parameters used for registration (if performed by a proper method of YStack class)  
 
+## Properties of Fus class
+
+`ExpRef` - unique experiment reference  
+`yStack` - handle to the associated `YStack`  
+`doppler` - functional Doppler data - nZ-by-nX-by-nT  
+`dopplerFast` - fast functional Doppler data - temporally subdivided `doppler`, average of N `dopplerFast` frames is equal to a single `doppler` frame  
+`regDoppler` - registered `doppler`  
+`regDopplerFast` - registered `dopplerFast`  
+`xAxis` - x coordinates of `doppler` and `dopplerFast` data. Can be different to the `xAxis` and `zAxis` properties of the associated `YStack` class if the functional data is already cropped.  
+zAxis
+yCoord
+tAxis
+tAxisFast
+dt
+dtFast
+protocol
+block
+pars
+TL
+hwInfo
+stim
+stimTimes
+stimFrameTimes
+stimSequence
+eyeMovie
+eyeTimes
+outlierFrameIdx
+outlierFrameIdxFast
+dII
+dIIFast
+regDII
+regDIIFast
+retinotopyMaps
+retinotopyMapsFast
+svd
+svdReg
+D
