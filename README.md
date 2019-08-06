@@ -1,7 +1,9 @@
 # fusiBox
 Code related to fUSi rig and fUSi data analysis
 
-## Properties of YStack class
+## YStack class
+
+### Properties
 
 `ExpRef` - Unique experiment reference for the y-stack acquisition ('structural' stack of the whole accessible brain usually 
 acquired once per experiment)  
@@ -19,7 +21,37 @@ area outside of this mask will be 'zeroed' in the subsequent analyses
 `svdReg` - spatial components of the SVD decomposition (if was performed) of the **registered** data  
 `regParams` - parameters used for registration (if performed by a proper method of YStack class)  
 
-## Properties of Fus class
+### Methods  
+
+`YStack`  
+`addFus`  
+`addlistener`  
+`applyMask`  
+`autoCrop`  
+`exportStruct`  
+`getDoppler`  
+`getMask`  
+`getOutliers`  
+`getRetinotopy`  
+`getdII`  
+`manualCrop`  
+`plotSVDs`  
+`plotSlices`  
+`plotVolume`  
+`plotVolumeMultiple`  
+`processFastDoppler`  
+`regDoppler`  
+`renderVolumeRotation`  
+`rotateUdII`  
+`saveLite`  
+`svdDecomposition`  
+`svddII`  
+
+---
+
+## Fus class
+
+### Properties
 
 `ExpRef` - unique experiment reference  
 `yStack` - handle to the associated `YStack`  
@@ -60,3 +92,20 @@ The following properties will only be populated after additional analyses:
 `svd` - temporal components of the SVD decomposition (`V` from the `[U, S, V] = svds(doppler, nSVDs)`) of the original `doppler` and `dopplerFast`  
 `svdReg` - temporal components of the SVD decomposition of the registered `regDoppler` and `regDopplerFast`  
 `D` - estimated displacement fields used for registration (see also MATLAB's `imregdemons()`)  
+
+### Methods
+
+`Fus`  
+`addlistener`  
+`dIIMovie`  
+`getCroppedDoppler`  
+`getETA`  
+`getOutliers`  
+`getRetinotopy`  
+`getdII`  
+`hardCrop`  
+`movie`  
+`projectFastDoppler`  
+`regFastDoppler`  
+`showRetinotopy`  
+
