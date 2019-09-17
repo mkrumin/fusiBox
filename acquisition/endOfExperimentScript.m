@@ -1,5 +1,5 @@
-animalName = 'PC037';
-expDate = '2019-06-18';
+animalName = 'CR015';
+expDate = '2019-08-01';
 
 question = sprintf('Process data of %s for %s?', animalName, expDate);
 button = questdlg(question,'fUSi post exp script','OK','Cancel','Cancel');
