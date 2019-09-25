@@ -19,8 +19,16 @@ end
 [xAxis, zAxis, dt] = obj.getAxis;
 doppler.xAxis = xAxis;
 doppler.zAxis = zAxis;
-doppler.motorPosition = obj.HARD.motorPosition;
-doppler.nBFPerFrame = size(obj.BFfilt, 1);
+try
+    doppler.motorPosition = obj.HARD.motorPosition;
+catch
+    doppler.motorPosition = obj.H.motorPosition;
+end
+try
+    doppler.nBFPerFrame = size(obj.BFfilt, 1);
+catch
+    doppler.nBFPerFrame = obj.parSeq.HQ.NfrBk * obj.Nblock;
+end
 doppler.dtBF = dt(1);
 doppler.dtSinglePlanewave = dt(2);
 doppler.dtRF = dt(3);
@@ -57,5 +65,5 @@ doppler.params = getParameters(obj);
 % We need the '-v7.3' for large files
 tic;
 fprintf('Saving the data to %s ..', fullFileName);
-save(fullFileName, 'doppler', '-v7.3')
+save(fullFileName, 'doppler', '-v7.3', '-nocompression')
 fprintf('.done (%3.1f seconds)\n', toc);

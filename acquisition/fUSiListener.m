@@ -6,12 +6,21 @@ SCAN.folderFullData = 'Z:\fUSiFullData';
 
 % echoudp('on',1001)
 u = udp('1.1.1.1', 1103, 'LocalPort', 1001);
-set(u, 'DatagramReceivedFcn', @fUSiUDPCallback);
+try
+    switch fusVersion
+        case 'R07PX'
+            set(u, 'DatagramReceivedFcn', @fUSiUDPCallback_R07PX);
+        otherwise
+            set(u, 'DatagramReceivedFcn', @fUSiUDPCallback);
+    end
+catch
+    set(u, 'DatagramReceivedFcn', @fUSiUDPCallback);
+end
 
 u.UserData.motorObj = motorObj;
 fopen(u);
 
-fusiWorkaround;
+fusiWorkaround(fusVersion);
 % echoudp('off');
 
 % fclose(u);

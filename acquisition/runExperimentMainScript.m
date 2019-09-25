@@ -5,9 +5,31 @@ myDir = cd('C:\fusimodule\R07PX');
 initScan307;
 cd(myDir);
 
-setFolder('D:\testNewVersion');
-setFileName('testCR015');
-setParameters('parameters128.m')
-setDepthCompute(5, 6)
-SCAN.folderFullData = 'Z:\testNewVersion';
-SCAN.fulldata = 'Z:\testNewVersion';
+%%
+% make sure the folder exists before calling this function
+dummyFolder = 'D:\junk';
+mkSuccess = true;
+if ~exist(dummyFolder, 'dir')
+    [mkSuccess, mkErrMess] = mkdir(dummyFolder);
+end
+if mkSuccess
+    setFolder(dummyFolder); %also creates subfolders (fus, fulldata, info, images)
+    setFileName('test'); % sets SCAN.experimentName
+    setParameters('parameters128.m')
+    setDepthCompute(5, 6)
+    SCAN.folderFullData = 'Z:\fUSiFullData';
+    SCAN.fulldata = SCAN.folderFullData;
+else
+    warning(sprintf('Couldn''t create a local folder %s, with the following message:\n%s\naborting...\n', ...
+        dummyFolder, mkErrMess));
+end
+
+%%
+addpath('C:\fusimodule\motorZaber');
+
+% start the motor
+motorObj = stpMotor('COM1');
+fusVersion = 'R07PX';
+fUSiListener;
+
+%%

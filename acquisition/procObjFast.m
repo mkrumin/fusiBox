@@ -15,30 +15,31 @@ classdef  procObjFast  < handle
         end
         
         function startFus(obj) 
-           fprintf('call startFus'); 
+           global SCAN;
+           fprintf('call startFus\n'); 
+           fprintf('Full data location will be %s\n', SCAN.fileNames);
         end
         
         function newImage(obj)
             global SCAN
-            i=SCAN.fusIndex
-            % there is a misalignment of the timestamps by 2 frames
-            try
-%                 t=SCAN.time(i)
-%                 dt = SCAN.time(i) - SCAN.time(i-1)
-%                 fprintf('Image: %d time %.2f, dt = %4.2fs\n',i, t, dt);
+            i=SCAN.fusIndex;
+            if i<=1 || mod(i, 10)==0
+                fprintf('Frame #%1.0f\n', i);
             end
+            % there is a misalignment of the timestamps by 2 frames
+            
             if i==1
                 % We start the acquisition in a 'paused' mode and then
                 % change this flag externally to actually  start the acquisition
-%                 SCAN.flagPause = 1;
+                SCAN.flagPause = 1;
             end
             
 %             try
-            [xx, zz, dt] = SCAN.getAxis;
-            hf = figure(99);
-            hf.Children.Children.XData = xx;
-            hf.Children.Children.YData = zz;
-            drawnow;
+%             [xx, zz, dt] = SCAN.getAxis;
+%             hf = figure(99);
+%             hf.Children.Children.XData = xx;
+%             hf.Children.Children.YData = zz;
+%             drawnow;
 %             end
 %             if i~=1 && (obj.saveBF || obj.saveBFFilt)
 % %                 tic

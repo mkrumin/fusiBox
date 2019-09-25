@@ -27,11 +27,11 @@ function varargout = fusiWorkaround(varargin)
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
-                   'gui_Singleton',  gui_Singleton, ...
-                   'gui_OpeningFcn', @fusiWorkaround_OpeningFcn, ...
-                   'gui_OutputFcn',  @fusiWorkaround_OutputFcn, ...
-                   'gui_LayoutFcn',  [] , ...
-                   'gui_Callback',   []);
+    'gui_Singleton',  gui_Singleton, ...
+    'gui_OpeningFcn', @fusiWorkaround_OpeningFcn, ...
+    'gui_OutputFcn',  @fusiWorkaround_OutputFcn, ...
+    'gui_LayoutFcn',  [] , ...
+    'gui_Callback',   []);
 if nargin && ischar(varargin{1})
     gui_State.gui_Callback = str2func(varargin{1});
 end
@@ -62,7 +62,14 @@ handles.textFull.String = sprintf('Full data: %s', SCAN.folderFullData);
 handles.checkBFFilt.Value = 1;
 handles.saveBF = handles.checkBF.Value;
 handles.saveBFFilt = handles.checkBFFilt.Value;
+if ~isempty(varargin)
+    handles.fusVersion = varargin{1};
+else
+    handles.fusVersion = 'v19.4b';
+end
+
 if handles.checkBF.Value || handles.checkBFFilt.Value
+    if isequal(handles.fusVersion, '')
     diskSpaceWarning;
 end
 % Update handles structure
@@ -73,7 +80,7 @@ guidata(hObject, handles);
 
 
 % --- Outputs from this function are returned to the command line.
-function varargout = fusiWorkaround_OutputFcn(hObject, eventdata, handles) 
+function varargout = fusiWorkaround_OutputFcn(hObject, eventdata, handles)
 % varargout  cell array for returning output args (see VARARGOUT);
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -91,16 +98,71 @@ function RUN_pushbutton_Callback(hObject, eventdata, handles)
 
 global SCAN
 
-po = procObj(handles);
-set(hObject, 'Enable', 'off', 'String', 'Running...');
-handles.checkBF.Enable = 'off';
-handles.checkBFFilt.Enable = 'off';
-nFrames = ceil(7200/SCAN.periodFilm); % nFrames for two hour recording
-SCAN.FilmDoppler(max(SCAN.Nimag, nFrames), SCAN.periodFilm, 'LQ', po);
-set(hObject, 'Enable', 'on', 'String', 'START (paused)');
-handles.checkBF.Enable = 'on';
-handles.checkBFFilt.Enable = 'on';
+switch handles.fusVersion
+    case 'v19.4b'
+        po = procObj(handles);
+        set(hObject, 'Enable', 'off', 'String', 'Running...');
+        handles.checkBF.Enable = 'off';
+        handles.checkBFFilt.Enable = 'off';
+        nFrames = ceil(7200/SCAN.periodFilm); % nFrames for two hour recording
+        SCAN.FilmDoppler(max(SCAN.Nimag, nFrames), SCAN.periodFilm, 'LQ', po);
+        set(hObject, 'Enable', 'on', 'String', 'START (paused)');
+        handles.checkBF.Enable = 'on';
+        handles.checkBFFilt.Enable = 'on';
+    case 'R07PX'
+        pof = procObjFast(handles);
+        set(hObject, 'Enable', 'off', 'String', 'Running...');
+        handles.checkBF.Enable = 'off';
+        handles.checkBFFilt.Enable = 'off';
+        if (handles.checkBF.Value || handles.checkBFFilt.Value)
+            % make sure the full data will be saved
+            SCAN.fullData = 1;
+            SCAN.H.fullData.Value = 1;
+        % create a new folder for the full data
+            SCAN.fileNames = ...
+                fullfile(SCAN.folderFullData, ['current_', datestr(now, 'HHMMSS'), '_BF']);
+            mkdir(SCAN.fileNames);
+            % show the warning dialog with disk space info
+            diskSpaceWarning(SCAN);
+        end
+        
+        [xx, zz, tt] = SCAN.getAxis;
+        singleBlockDuration = SCAN.parSeq.HQ.NfrBk*tt(1);
+        nBlocks = SCAN.Nblock; % nBlocks to average for each frame
+        nFrames = ceil(7200/singleBlockDuration/nBlocks); % two hours of recording
+        SCAN.Nimag = nFrames;
+        I = SCAN.FilmFast(2, nBlocks, nFrames, pof);
+        SCAN.Nimag = str2num(SCAN.H.Nimag.String);
+        set(hObject, 'Enable', 'on', 'String', 'START (paused)');
+        handles.checkBF.Enable = 'on';
+        handles.checkBFFilt.Enable = 'on';
+        saveDopplerMovie(SCAN)
+        renameFullData(SCAN);
+        
+        dummyPath = 'D:\junk';
+        mkSuccess = true;
+        if ~exist(dummyPath, 'dir')
+            [mkSuccess, message] = mkdir(dummyPath);
+        end
+        if mkSuccess
+            fprintf('Dummy %s folder successfully created\n', dummyPath);
+            setFolder(dummyPath); %also creates subfolders (fus, fulldata, info, images)
+            SCAN.fulldata = SCAN.folderFullData;
+            SCAN.fileNames = ...
+                fullfile(SCAN.folderFullData, ['current_', datestr(now, 'HHMMSS'), '_BF']);
+            mkdir(SCAN.fileNames);
+            % turn off full data saving
+            SCAN.fullData = 0;
+            SCAN.H.fullData.Value = 0;
 
+        else
+            error('There was a problem creating %s. %s\n', dummyPath, message');
+        end
+        setFileName('test'); % sets SCAN.experimentName
+%         SCAN.fulldata = 'Z:\testNewVersion';
+    otherwise
+        warning(sprintf('Fus version ''%s'' not supported', handles.fusVersion));
+end
 
 % --- Executes on button press in checkBF.
 function checkBF_Callback(hObject, eventdata, handles)
