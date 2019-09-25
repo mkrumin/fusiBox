@@ -69,8 +69,12 @@ else
 end
 
 if handles.checkBF.Value || handles.checkBFFilt.Value
-    if isequal(handles.fusVersion, '')
-    diskSpaceWarning;
+    if isequal(handles.fusVersion, 'v19.4b')
+        diskSpaceWarning;
+    else
+        diskSpaceWarning(SCAN);
+    end
+    
 end
 % Update handles structure
 guidata(hObject, handles);
