@@ -32,4 +32,13 @@ motorObj = stpMotor('COM1');
 fusVersion = 'R07PX';
 fUSiListener;
 
-%%
+%% stack acquisitions
+animalName = 'test';
+yy = 0:0.1:1;
+
+%% This is for older slow fUSi
+acquireYStack_R07PX(animalName, yy, SCAN, motorObj);
+
+
+
+

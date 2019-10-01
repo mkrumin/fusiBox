@@ -177,9 +177,15 @@ function checkBF_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkBF
 
+global SCAN 
+
 handles.saveBF = hObject.Value ~= 0;
 if hObject.Value
-    diskSpaceWarning;
+    if isequal(handles.fusVersion, 'v19.4b')
+        diskSpaceWarning;
+    else
+        diskSpaceWarning(SCAN);
+    end
 end
 guidata(hObject, handles);
 
@@ -193,8 +199,14 @@ function checkBFFilt_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of checkBFFilt
 
+global SCAN;
+
 handles.saveBFFilt = hObject.Value ~= 0;
 if hObject.Value
-    diskSpaceWarning;
+    if isequal(handles.fusVersion, 'v19.4b')
+        diskSpaceWarning;
+    else
+        diskSpaceWarning(SCAN);
+    end
 end
 guidata(hObject, handles);
