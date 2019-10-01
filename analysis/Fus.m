@@ -53,7 +53,7 @@ classdef Fus < handle
             obj.dt = data.fusiFrameDuration;
             obj.doppler = data.doppler.frames;
             obj.tAxis = data.fusiFrameOnsets;
-%             obj.dopplerFast= cell2mat(reshape(data.doppler.fastFrames, 1, 1, []));
+            %             obj.dopplerFast= cell2mat(reshape(data.doppler.fastFrames, 1, 1, []));
             % the line above tends to consume a lot of memory, which is
             % critical for large datsets, let's replace it with a loop
             [nz, nx, nFrames] = size(data.doppler.frames);
@@ -154,14 +154,16 @@ classdef Fus < handle
                 I0 = median(obj.regDoppler(:, :, idx), 3);
                 obj.regDII = bsxfun(@rdivide, bsxfun(@minus, obj.regDoppler, I0), I0);
             end
-%             idx = ~obj.outlierFrameIdxFast;
-%             I0Fast = median(obj.dopplerFast(:, :, idx), 3);
+            %             idx = ~obj.outlierFrameIdxFast;
+            %             I0Fast = median(obj.dopplerFast(:, :, idx), 3);
             % we should use the same meanFrame for slow and fast data
-            I0Fast = median(obj.doppler(:, :, idx), 3);
-            obj.dIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.dopplerFast, I0Fast), I0Fast);
-            if ~isempty(obj.regDopplerFast)
-                I0 = median(obj.regDoppler(:, :, idx), 3);
-                obj.regDIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.regDopplerFast, I0), I0);
+            if ~isempty(obj.dopplerFast)
+                I0Fast = median(obj.doppler(:, :, idx), 3);
+                obj.dIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.dopplerFast, I0Fast), I0Fast);
+                if ~isempty(obj.regDopplerFast)
+                    I0 = median(obj.regDoppler(:, :, idx), 3);
+                    obj.regDIIFast = bsxfun(@rdivide, bsxfun(@minus, obj.regDopplerFast, I0), I0);
+                end
             end
         end
         
@@ -169,23 +171,26 @@ classdef Fus < handle
             idx = ~obj.outlierFrameIdx;
             idx = true(size(idx));
             stimPars = getStimPars(obj.protocol);
-%             mov = obj.dII(:,:,idx);
-            svdIdx = [1:500];
-            U = obj.yStack.svdReg.UdII(:, :, svdIdx);
-            S = obj.yStack.svdReg.SdII(svdIdx);
-            V = obj.svdReg.VdII(:, svdIdx);
-            [nz, nx, ~] = size(U);
-            mov = reshape(U, nz*nx, []) * diag(S) * V';
-            mov = reshape(mov, nz, nx, []);
+            mov = obj.dII(:,:,idx);
+            %             svdIdx = [1:500];
+            %             U = obj.yStack.svdReg.UdII(:, :, svdIdx);
+            %             S = obj.yStack.svdReg.SdII(svdIdx);
+            %             V = obj.svdReg.VdII(:, svdIdx);
+            %             [nz, nx, ~] = size(U);
+            %             mov = reshape(U, nz*nx, []) * diag(S) * V';
+            %             mov = reshape(mov, nz, nx, []);
             obj.retinotopyMaps = getPreferenceMaps(mov(:,:,idx), obj.tAxis(idx) + obj.dt/2, obj.stimTimes, stimPars);
             
-            idx = ~obj.outlierFrameIdxFast;
-            idx = true(size(idx));
-            V = obj.svdReg.VdIIFast(:, svdIdx);
-            mov = reshape(U, nz*nx, []) * diag(S) * V';
-            mov = reshape(mov, nz, nx, []);
-            obj.retinotopyMapsFast = getPreferenceMaps(mov(:,:, idx), obj.tAxisFast(idx) + obj.dtFast/2, ...
-                obj.stimTimes, stimPars);
+            if ~isempty(obj.dIIFast)
+                idx = ~obj.outlierFrameIdxFast;
+                idx = true(size(idx));
+                mov = obj.dIIFast(:,:,idx);
+                %             V = obj.svdReg.VdIIFast(:, svdIdx);
+                %             mov = reshape(U, nz*nx, []) * diag(S) * V';
+                %             mov = reshape(mov, nz, nx, []);
+                obj.retinotopyMapsFast = getPreferenceMaps(mov(:,:, idx), obj.tAxisFast(idx) + obj.dtFast/2, ...
+                    obj.stimTimes, stimPars);
+            end
         end
         
         function showRetinotopy(obj, showHemoDelay, plotType)
@@ -201,13 +206,16 @@ classdef Fus < handle
                 stimPars(iStim).xAxis = obj.xAxis;
                 stimPars(iStim).yAxis = obj.zAxis;
             end
-%             plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
-            plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
+            if ~isempty(obj.retinotopyMapsFast)
+                plotPreferenceMaps(obj.retinotopyMapsFast, stimPars, showHemoDelay, plotType);
+            else
+                plotPreferenceMaps(obj.retinotopyMaps, stimPars, showHemoDelay, plotType);
+            end
         end
         
         function F = movie(obj, iSVD, reg, fast)
             
-            if nargin < 4 
+            if nargin < 4
                 fast = false;
             end
             
@@ -256,8 +264,8 @@ classdef Fus < handle
                 mov = reshape(mov, nZ, nX, []);
                 mov = bsxfun(@plus, mov, meanFrame);
             end
-%             mov = log10(mov - min(mov(:)));
-%             clim = prctile(mov(:), [0.01 99.99]);
+            %             mov = log10(mov - min(mov(:)));
+            %             clim = prctile(mov(:), [0.01 99.99]);
             mov = sqrt(mov - min(mov(:)));
             clim = prctile(mov(:), [1 99]);
             hFig = figure;
@@ -285,13 +293,13 @@ classdef Fus < handle
                     tit.String = sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames));
                 end
                 drawnow;
-%                 pause(0.05);
+                %                 pause(0.05);
                 if nargout > 0 && ~fast
                     F(iFrame) = getframe(hFig);
                 end
-%                 if iFrame >= 1000
-%                     break;
-%                 end
+                %                 if iFrame >= 1000
+                %                     break;
+                %                 end
             end
         end
         
@@ -304,7 +312,7 @@ classdef Fus < handle
             if nargin < 3 || isempty(reg)
                 reg = false;
             end
-
+            
             if nargin < 2 || isempty(iSVD)
                 if reg
                     if fast
@@ -344,16 +352,16 @@ classdef Fus < handle
                 mov = reshape(mov, nZ, nX, []);
             end
             nFrames = size(mov, 3);
-%             mov = imgaussfilt3(mov, 2);
+            %             mov = imgaussfilt3(mov, 2);
             % calculate the clim not including the masked out regions
             clim = prctile(mov(:), [0.5 99.5]);
             % make clim symmetric (should be more informative when looking at dI/I0)
             clim = [-1 1]*max(abs(clim));
             hFig = figure;
             colormap(bwrColormap);
-%             colormap hot
+            %             colormap hot
             mov(isnan(mov)) = 0;
-
+            
             if nargout > 0 && ~fast
                 F = struct('cdata', [], 'colormap', []);
                 F = repmat(F, nFrames, 1);
@@ -376,39 +384,39 @@ classdef Fus < handle
                     tit.String = sprintf('%3.1f/%2.0f [s]', tt(iFrame), tt(nFrames));
                 end
                 drawnow;
-%                 pause(0.08);
+                %                 pause(0.08);
                 if nargout > 0  && ~fast
                     F(iFrame) = getframe(hFig);
                 end
-%                 if iFrame >= 1000
-%                     break;
-%                 end
+                %                 if iFrame >= 1000
+                %                     break;
+                %                 end
             end
         end
         
         function regFastDoppler(obj)
-                nSlowFrames = size(obj.doppler, 3);
-                nFastFrames = size(obj.dopplerFast, 3);
-                frameRatio = nFastFrames/nSlowFrames;
-                obj.regDopplerFast = zeros(size(obj.dopplerFast), 'single');
-                nanIdx = isnan(obj.yStack.svdReg.meanFrame);
-                nanMask = ones(size(nanIdx));
-                nanMask(nanIdx) = NaN;
-                nChar = 0;
-                for iSlowFrame = 1:nSlowFrames
-                    if mod(iSlowFrame, 100) == 1
-                        fprintf(repmat('\b', 1, nChar));
-                        nChar = fprintf('Registering frame %1.0f/%1.0f', iSlowFrame, nSlowFrames);
-                    end
-                    DF = obj.D(:,:,:,iSlowFrame);
-                    idx = [1:frameRatio] + (iSlowFrame -1) * frameRatio;
-                    raw = obj.dopplerFast(:,:,idx);
-                    raw(isnan(raw)) = 0;
-                    frames = imwarp(raw, DF, 'linear', 'FillValues', NaN);
-                    frames = bsxfun(@times, frames, nanMask);
-                    obj.regDopplerFast(:,:,idx) = frames;
+            nSlowFrames = size(obj.doppler, 3);
+            nFastFrames = size(obj.dopplerFast, 3);
+            frameRatio = nFastFrames/nSlowFrames;
+            obj.regDopplerFast = zeros(size(obj.dopplerFast), 'single');
+            nanIdx = isnan(obj.yStack.svdReg.meanFrame);
+            nanMask = ones(size(nanIdx));
+            nanMask(nanIdx) = NaN;
+            nChar = 0;
+            for iSlowFrame = 1:nSlowFrames
+                if mod(iSlowFrame, 100) == 1
+                    fprintf(repmat('\b', 1, nChar));
+                    nChar = fprintf('Registering frame %1.0f/%1.0f', iSlowFrame, nSlowFrames);
                 end
-                fprintf('\n');
+                DF = obj.D(:,:,:,iSlowFrame);
+                idx = [1:frameRatio] + (iSlowFrame -1) * frameRatio;
+                raw = obj.dopplerFast(:,:,idx);
+                raw(isnan(raw)) = 0;
+                frames = imwarp(raw, DF, 'linear', 'FillValues', NaN);
+                frames = bsxfun(@times, frames, nanMask);
+                obj.regDopplerFast(:,:,idx) = frames;
+            end
+            fprintf('\n');
         end
         
         function projectFastDoppler(obj)
@@ -418,7 +426,7 @@ classdef Fus < handle
             U = obj.yStack.svd.U;
             S = obj.yStack.svd.S;
             obj.svd.VFast = getV(X, U, S);
-
+            
             % projecting registered fast Doppler
             X = obj.regDopplerFast;
             X = bsxfun(@minus, X, obj.yStack.svdReg.meanFrame);
@@ -431,13 +439,13 @@ classdef Fus < handle
             U = obj.yStack.svd.UdII;
             S = obj.yStack.svd.SdII;
             obj.svd.VdIIFast = getV(X, U, S);
-
+            
             % projecting registered fast dII
             X = obj.regDIIFast;
             U = obj.yStack.svdReg.UdII;
             S = obj.yStack.svdReg.SdII;
             obj.svdReg.VdIIFast = getV(X, U, S);
-
+            
             function V = getV(X, U, S)
                 [nz, nx, nt] = size(X);
                 X = reshape(X, nz * nx, nt);

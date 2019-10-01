@@ -130,6 +130,7 @@ switch handles.fusVersion
             diskSpaceWarning(SCAN);
         end
         
+        SCAN.H.fusVersion = handles.fusVersion;
         [xx, zz, tt] = SCAN.getAxis;
         singleBlockDuration = SCAN.parSeq.HQ.NfrBk*tt(1);
         nBlocks = SCAN.Nblock; % nBlocks to average for each frame

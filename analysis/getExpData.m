@@ -60,37 +60,87 @@ end
 
 doppler = getDoppler(ExpRef);
 
-nBFPerFrame = doppler.params.sizeBF(3);
+try
+    nBFPerFrame = doppler.nBFPerFrame;
+catch
+    nBFPerFrame = doppler.params.sizeBF(3);
+end
 bfRate = 1/doppler.dtBF;
 fusiFrameDuration = doppler.dtBF * nBFPerFrame;
 
-% these are the frame onsets
-fusiFrameOnsets = getFrameTimes(Timeline);
-% and these will be the 'middles' of the frames
-fusiFrameTimes = fusiFrameOnsets + nBFPerFrame/2/bfRate;
-% and this will be the short time axis of the BF frames within a single
-% Power Doppler frame
-timesBF = doppler.dtBF * [0:nBFPerFrame-1];
-
-% the last two frames acquired by the Verasonics are not
-% getting processes and are not making it into the final data
-fusiFrameTimes = fusiFrameTimes(1:end-2);
-fusiFrameOnsets = fusiFrameOnsets(1:end-2);
-% Timeline might miss the first few frames
-% Also, the first frame of the movie is acquired before the experiment
-% starts, the way acquisition currently works
-nFramesAcquired = length(fusiFrameTimes);
-
-nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
-doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
-doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
-if isfield(doppler, 'fastFrames')
-    doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
-else
-    % for experiments, which do not have fast data
-    doppler.fastFrames = cell(0);
+switch doppler.params.fusVersion
+    case 'R07PX'
+        % these are the 'neuralFrames' from Timeline (onsets of single
+        % blocks of 100 ms of acquisition)
+        neuralFrames = getFrameTimes(Timeline);
+        % depending on the amount of averaging done during the acquisition
+        % we should decimate the TTLs to aligh with the acquired
+        % microDopper frames
+        nBlocks = doppler.params.Nblock;
+        fusiFrameOnsets = neuralFrames(1:nBlocks:end);
+        % and these will be the 'middles' of the frames
+        fusiFrameTimes = fusiFrameOnsets + nBFPerFrame/2/bfRate;
+        % and this will be the short time axis of the BF frames within a single
+        % Power Doppler frame
+        timesBF = doppler.dtBF * [0:nBFPerFrame-1];
+        
+        % we will get several frames in the beginning of the acquisition,
+        % which do not have corresponding 'neuralFrames', because they were
+        % acruired before the Timeline started (as we first start the fUSi
+        % acquisition in a 'paused' mode)
+        nSkipFrames = 5;
+        doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
+        doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
+        if isfield(doppler, 'fastFrames')
+            doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
+        else
+            % for experiments, which do not have fast data
+            doppler.fastFrames = cell(0);
+        end
+        
+        % Let's make sure we have the same number of frames and timestamps
+        nTimes = length(fusiFrameTimes);
+        nSlowFrames = size(doppler.frames, 3);
+        nFastFrames = length(doppler.fastFrames);
+        if nFastFrames>0
+            nFramesFinal = min(nTimes, min(nSlowFrames, nFastFrames));
+            doppler.fastFrames = doppler.fastFrames(1:nFramesFinal);
+        else
+            nFramesFinal = min(nTimes, nSlowFrames);
+        end
+        doppler.frames = doppler.frames(:, :, 1:nFramesFinal);
+        doppler.softTimes = doppler.softTimes(1:nFramesFinal);
+        fusiFrameTimes = fusiFrameTimes(1:nFramesFinal);
+        fusiFrameOnsets = fusiFrameOnsets(1:nFramesFinal);
+        
+    otherwise
+        % these are the frame onsets
+        fusiFrameOnsets = getFrameTimes(Timeline);
+        % and these will be the 'middles' of the frames
+        fusiFrameTimes = fusiFrameOnsets + nBFPerFrame/2/bfRate;
+        % and this will be the short time axis of the BF frames within a single
+        % Power Doppler frame
+        timesBF = doppler.dtBF * [0:nBFPerFrame-1];
+        
+        % the last two frames acquired by the Verasonics are not
+        % getting processes and are not making it into the final data
+        fusiFrameTimes = fusiFrameTimes(1:end-2);
+        fusiFrameOnsets = fusiFrameOnsets(1:end-2);
+        % Timeline might miss the first few frames
+        % Also, the first frame of the movie is acquired before the experiment
+        % starts, the way acquisition currently works
+        nFramesAcquired = length(fusiFrameTimes);
+        
+        nSkipFrames = length(doppler.softTimes) - nFramesAcquired;
+        doppler.frames = doppler.frames(:, :, nSkipFrames+1:end);
+        doppler.softTimes = doppler.softTimes(nSkipFrames+1:end);
+        if isfield(doppler, 'fastFrames')
+            doppler.fastFrames = doppler.fastFrames(nSkipFrames+1:end);
+        else
+            % for experiments, which do not have fast data
+            doppler.fastFrames = cell(0);
+        end
 end
-
 try
     eyeFilename = dat.expFilePath(ExpRef, 'eyetracking');
     if exist([eyeFilename{1}, '.mj2'], 'file')

@@ -17,3 +17,8 @@ else
         dp = [];
     end
 end
+
+% for compatability with older versions
+if ~isfield(dp.params, 'fusVersion')
+    dp.params.fusVersion = '';
+end

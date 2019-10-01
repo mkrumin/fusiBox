@@ -24,6 +24,7 @@ try
 catch
     doppler.motorPosition = obj.H.motorPosition;
 end
+
 try
     doppler.nBFPerFrame = size(obj.BFfilt, 1);
 catch
@@ -33,6 +34,11 @@ doppler.dtBF = dt(1);
 doppler.dtSinglePlanewave = dt(2);
 doppler.dtRF = dt(3);
 doppler.params = getParameters(obj);
+try
+    doppler.params.fusVersion = obj.H.fusVersion;
+catch
+    doppler.params.fusVersion = 'v19.4b';
+end
 
 %% binning BF data (commented out because takes too long to run during the experiment, moved to binBF.m)
 
