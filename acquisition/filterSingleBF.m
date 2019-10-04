@@ -1,17 +1,17 @@
-function frameOut = filterSingleBF(bf)
+function frameOut = filterSingleBF(bf, Wn, nSVDs)
 
-bfIm = imag(bf);
-bfRe = real(bf);
+if nargin < 2 || isempty(Wn)
+    Wn = 15/250; % 15 Hz assuming 500 Hz sampling frequency
+end
+if nargin < 2 || isempty(Wn)
+    [nT, nZ, nX] = size(bf);
+    nSVDs = round(nT/10); % assuming the setting of 0.1 of the nSVD in SCAN 
+end
 
-[b, a] = butter(3, 15/250, 'high');
+[b, a] = butter(3, Wn, 'high');
 
-bfIm = filter(b, a, bfIm);
-bfRe = filter(b, a, bfRe);
-
-bfIm = shiftdim(bfIm, 1);
-bfRe = shiftdim(bfRe, 1);
-
-bfIm = rmSVD(bfIm, 50);
-bfRe = rmSVD(bfRe, 50);
-
-frameOut = mean(bfRe.^2 + bfIm.^2, 3);
+bfFilt = single(filtfilt(b, a, double(bf)));
+% bfFilt = filtfilt(b, a, real(bf)) + 1i * filtfilt(b, a, imag(bf));
+bfFilt = shiftdim(bfFilt, 1);
+bfSvd = rmSVD(bfFilt, nSVDs);
+frameOut = mean(bfSvd.*conj(bfSvd), 3);
