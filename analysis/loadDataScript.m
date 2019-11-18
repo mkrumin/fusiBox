@@ -5,7 +5,7 @@
 % For each experimental day (a single YSTack + multiple Fus objects) 
 % all the data is saved in a single file with the name (ExpRef)_YS.mat
 
-animalNames = {'CR013_DRI2'};
+animalNames = {'PC041'};
 rootDataFolder = 'F:\fUSiData\';
 nMice = length(animalNames);
 %%

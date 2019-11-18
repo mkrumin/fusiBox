@@ -22,8 +22,14 @@ for iExp=1:13
     ExpRef{iExp} = sprintf('2017-11-17_%1.0f_CR01', iExp+1);
 end
 yPosition = [0 1 2 3 4 0.33 1.33 2.33 3.33 0.67 1.67 2.67 3.67];
+
+for iExp=1:4
+    ExpRef{iExp} = sprintf('2019-11-11_%1.0f_CR017', iExp);
+end
+yPosition = [0.8 1.3 1 1.5];
+
 %%
-ExpRef = {'2018-03-30_5_CR009'};
+% ExpRef = {'2018-03-30_5_CR009'};
 
 nSlices = length(ExpRef);
 for iSlice = 1:nSlices
@@ -31,7 +37,7 @@ for iSlice = 1:nSlices
     res(iSlice) = analyzeKalatskyFusi(ExpRef{iSlice});
 end
 
-%%
+
 
 ax = plotYStack(res, yPosition);
 
@@ -65,11 +71,11 @@ toc
 sendEmail('michael@cortexlab.net', 'rendering done');
 %%
 for iSlice = 1:length(ExpRef)
-    h(iSlice, :) = plotPreferenceMaps(res(iSlice).maps, res(iSlice).pars, 1);
+    h(iSlice, :) = plotPreferenceMaps(res(iSlice).maps, res(iSlice).pars, 0, 'alpha');
     for iFig = 1:length(h(iSlice, :))
         h(iSlice, iFig).Name = res(iSlice).ExpRef;
     end
-    hMean(iSlice) = plotMeanFrame(res(iSlice));
+%     hMean(iSlice) = plotMeanFrame(res(iSlice));
 end
 
 %% 

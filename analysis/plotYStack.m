@@ -1,12 +1,23 @@
 function ax = plotYStack(res, yy)
 
-doInterpolation = true;
+doInterpolation = false;
 dY = 0.1;
-alphaPower = 1.2;
+alphaPower = 1.5;
+alphaThr = 0.2;
 alphaPowerMean = 2.5;
-x0 = 6.6;
-y0 = 5;
-z0 = 2.3;
+
+% x0 = 6.6;
+% y0 = 5;
+% z0 = 1.5;
+x0 = 6.7;
+y0 = 0;
+z0 = 0;
+zMin = 0.2;
+xMin = 2.5;
+xMax = 11;
+
+ampFilterStd = [0.5 0.5 0.1] * 2;
+prefFilterStd = [0.5 0.5 0.1];
 
 % build the stacks
 nSlices = length(res);
@@ -32,24 +43,27 @@ end
 %%
 % crop the stacks and the axes
 xAxis = res(1).pars(1).xAxis;
-xIdx = find(xAxis>=3 & xAxis <=10);
-yAxis = res(1).pars(1).yAxis;
-yIdx = find(yAxis>=2);
+xIdx = find(xAxis>=xMin & xAxis <=xMax);
+zAxis = res(1).pars(1).yAxis;
+zIdx = find(zAxis>=zMin);
 xAxis = xAxis(xIdx);
-yAxis = yAxis(yIdx);
-meanStack = meanStack(yIdx, xIdx, :);
-xPosPref = xPosPref(yIdx, xIdx, :);
-xPosAmp = xPosAmp(yIdx, xIdx, :);
-yPosPref = yPosPref(yIdx, xIdx, :);
-yPosAmp = yPosAmp(yIdx, xIdx, :);
+zAxis = zAxis(zIdx);
+meanStack = meanStack(zIdx, xIdx, :);
+xPosPref = xPosPref(zIdx, xIdx, :);
+xPosAmp = xPosAmp(zIdx, xIdx, :);
+yPosPref = yPosPref(zIdx, xIdx, :);
+yPosAmp = yPosAmp(zIdx, xIdx, :);
+
+yPosPref = imgaussfilt3(yPosPref, prefFilterStd);
+xPosPref = imgaussfilt3(xPosPref, prefFilterStd);
 
 % Normalize the stacks
 meanStack = meanStack - min(meanStack(:));
 meanStack = meanStack/max(meanStack(:));
 meanStack = 1 - meanStack; % better for plotting
 % normalizing xpos and ypos together
-xPosAmp = imgaussfilt3(xPosAmp, [0.1 0.5 0.5]);
-yPosAmp = imgaussfilt3(yPosAmp, [0.1 0.5 0.5]);
+xPosAmp = imgaussfilt3(xPosAmp, ampFilterStd);
+yPosAmp = imgaussfilt3(yPosAmp, ampFilterStd);
 minAmp = min([xPosAmp(:); yPosAmp(:)]);
 maxAmp = max([xPosAmp(:); yPosAmp(:)]);
 xPosAmp = (xPosAmp - minAmp)/(maxAmp-minAmp);
@@ -67,7 +81,6 @@ xPosPref = permute(xPosPref, [3 2 1]);
 xPosAmp = permute(xPosAmp, [3 2 1]);
 yPosPref = permute(yPosPref, [3 2 1]);
 yPosAmp = permute(yPosAmp, [3 2 1]);
-zAxis = yAxis; % yAxis of the doppler movie is actually zAxis for plotting
 yAxis = ySorted;
 
 % align axes to bregma (approximately)
@@ -132,7 +145,7 @@ caxis(cMinMax);
 colormap(ax(2), 'hsv')
 alphaXPos = xPosAmp; % max amplitude is the least transparent
 % suppress noise
-thr = 0.2;
+thr = alphaThr;
 alphaXPos = (alphaXPos-thr)/(1-thr);
 alphaXPos = max(alphaXPos, 0);
 
@@ -165,7 +178,7 @@ caxis(cMinMax);
 colormap(ax(3), 'hsv')
 alphaYPos = yPosAmp; % max amplitude is the least transparent
 % suppress noise
-thr = 0.2;
+thr = alphaThr;
 alphaYPos = (alphaYPos-thr)/(1-thr);
 alphaYPos = max(alphaYPos, 0);
 
@@ -213,31 +226,33 @@ for i = 1:3
 end
 % keyboard;
 
-return;
+% return;
 %% Make a figure with all the slices as separate panels
 
 nSlices = length(yAxis);
 alphaPower = 0.5;
+meanStack = -meanStack.^(1/2);
 for iSlice = nSlices:-1:1
-    h = figure;
-    h.Position = [100 100 1800 800];
+    h = figure('Name', sprintf('Slice #%g', iSlice));
+    h.Position = [100 100 1700 750];
     h.Color = [1 1 1];
     
     % plotting vasculature
     ah(1) = subplot(1, 3, 1);
-    colormap(ah(1), 'hot');
     im = squeeze(meanStack(iSlice,:,:))';
     imh = imagesc(xAxis, zAxis, im);
+    colormap(ah(1), 'hot');
     %     imh.AlphaData = 1-im;
     %     imh.AlphaDataMapping = 'scaled';
     axis equal tight
-    caxis(prctile(im(:), [2 95]))
+    caxis(prctile(im(:), [5 99]))
     cb = colorbar;
     cb.Location = 'southoutside';
     cb.Visible = 'off';
     cb = colorbar;
     cb.Location = 'eastoutside';
     cb.Visible = 'off';
+
     
     title('Vasculature', 'FontSize', 14)
     tx = text(min(xlim) - 1.5, mean(ylim), sprintf('AP = %4.2f [mm]', yAxis(iSlice)));
@@ -248,9 +263,9 @@ for iSlice = nSlices:-1:1
     
     % plotting xpos
     ah(2) = subplot(1, 3, 2);
-    colormap(ah(2), 'hsv');
     im = squeeze(xPosPref(iSlice,:,:))';
     imh = imagesc(xAxis, zAxis, im);
+    colormap(ah(2), 'hsv');
     imh.AlphaData = squeeze(alphaXPos(iSlice,:,:))'.^alphaPower;
     imh.AlphaDataMapping = 'scaled';
     axis equal tight
@@ -271,9 +286,9 @@ for iSlice = nSlices:-1:1
 
     % plotting ypos
     ah(3) = subplot(1, 3, 3);
-    colormap(ah(3), 'hsv');
     im = squeeze(yPosPref(iSlice,:,:))';
     imh = imagesc(xAxis, zAxis, im);
+    colormap(ah(3), 'hsv');
     imh.AlphaData = squeeze(alphaYPos(iSlice,:,:))'.^alphaPower;
     imh.AlphaDataMapping = 'scaled';
     axis equal tight
@@ -313,5 +328,18 @@ for iSlice = nSlices:-1:1
 %     saveas(h, filename, 'epsc');
 end
 
+return
+%%
+YStack = struct;
+YStack.ExpRef = '2017-11-17_CR01';
+YStack.xAxis = xAxis;
+YStack.yAxis = yAxis;
+YStack.zAxis = zAxis;
+YStack.meanDoppler = permute(meanStack, [3, 2, 1]);
+YStack.xPos = permute(xPosPref, [3, 2, 1])/(2 * pi) * 270 - 135;
+YStack.xPosAlpha = permute(alphaXPos, [3, 2, 1]).^alphaPower;
+YStack.yPos = permute(yPosPref, [3, 2, 1])/(2 * pi) * 90 - 45;
+YStack.yPosAlpha = permute(alphaYPos, [3, 2, 1]).^alphaPower;
+% save('2017-11-17_CR01_Retinotopy.mat', '-struct', 'YStack', '-v7.3', '-nocompression')
 
 end

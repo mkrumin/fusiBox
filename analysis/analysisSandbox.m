@@ -151,14 +151,18 @@ YS.plotSVDs(1:30, 1, 1)
 %%
 tic
 % F = Ffull;
-ExpRef = YS.fusi(1).ExpRef;
-vw = VideoWriter(sprintf('%s_dII.avi', ExpRef));
-vw.FrameRate = 30;
-vw.Quality = 80;
+ExpRef = YSLite.fusi(1).ExpRef;
+vw = VideoWriter(sprintf('%s_nonRegReg', ExpRef), 'MPEG-4');
+vw.FrameRate = 15;
+vw.Quality = 70;
 open(vw);
-for iFrame = 1:length(Fall{1})
-    fprintf('Frame %d/%d\n', iFrame, length(Fall{1}))
-    writeVideo(vw, [Fall{1}(iFrame).cdata, Fall{3}(iFrame).cdata; Fall{2}(iFrame).cdata, Fall{4}(iFrame).cdata]); 
+% vr = VideoReader('2019-05-15_1_PC041_dII.avi');
+
+for iFrame = 1:1000
+    fprintf('Frame %d/%d\n', iFrame, length(F))
+    frame = [Fleft(iFrame).cdata, F(iFrame).cdata];
+    writeVideo(vw, frame);
+%     writeVideo(vw, [Fall{1}(iFrame).cdata, Fall{3}(iFrame).cdata; Fall{2}(iFrame).cdata, Fall{4}(iFrame).cdata]); 
 end
 close(vw)
 toc
@@ -186,5 +190,4 @@ end
 close(vw)
 toc
 
-
-
+%%
