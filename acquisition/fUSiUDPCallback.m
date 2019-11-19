@@ -8,7 +8,7 @@ function fUSiUDPCallback(src, event)
 % persistent folders
 global SCAN
 
-ExpStartDelay = 10;
+ExpStartDelay = 15;
 stopDelay = 0; % delay in seconds between receiving ExpEnd and aborting (stopping) the acquisition
 % The best practive is to use 0, and use the ExpEnd delay feature in mpep
 % to acquire a few seconds of data after the last stimulus presentation.

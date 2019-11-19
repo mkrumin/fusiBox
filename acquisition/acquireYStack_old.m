@@ -18,8 +18,8 @@ yStackDoppler = nan(numel(zAxisDop), numel(xAxisDop), Nimg, nY, 'single');
 yStackBMode = nan(numel(zAxisBM), numel(xAxisBM), NimgBM, nY, 'single');
 
 hFig = figure;
-nRows = floor(sqrt(nY));
-nColumns = ceil(nY/nRows);
+nColumns = floor(sqrt(nY));
+nRows = ceil(nY/nColumns);
 
 tStart = tic;
 for iY = 1:nY

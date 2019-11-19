@@ -23,7 +23,8 @@ for iExp=1:13
 end
 yPosition = [0 1 2 3 4 0.33 1.33 2.33 3.33 0.67 1.67 2.67 3.67];
 %%
-ExpRef = {'2018-03-30_5_CR009'};
+ExpRef = {'2019-11-15_1_CR020'};
+yPosition = [0.4, 0.6]; 
 
 nSlices = length(ExpRef);
 for iSlice = 1:nSlices
@@ -31,6 +32,7 @@ for iSlice = 1:nSlices
     res(iSlice) = analyzeKalatskyFusi(ExpRef{iSlice});
 end
 
+res(2) = res(1);
 %%
 
 ax = plotYStack(res, yPosition);

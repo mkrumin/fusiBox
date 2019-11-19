@@ -1,12 +1,12 @@
 function ax = plotYStack(res, yy)
 
-doInterpolation = true;
+doInterpolation = false;
 dY = 0.1;
 alphaPower = 1.2;
 alphaPowerMean = 2.5;
 x0 = 6.6;
 y0 = 5;
-z0 = 2.3;
+z0 = 0;
 
 % build the stacks
 nSlices = length(res);
@@ -32,9 +32,9 @@ end
 %%
 % crop the stacks and the axes
 xAxis = res(1).pars(1).xAxis;
-xIdx = find(xAxis>=3 & xAxis <=10);
+xIdx = find(xAxis>=0 & xAxis <=12);
 yAxis = res(1).pars(1).yAxis;
-yIdx = find(yAxis>=2);
+yIdx = find(yAxis>=0);
 xAxis = xAxis(xIdx);
 yAxis = yAxis(yIdx);
 meanStack = meanStack(yIdx, xIdx, :);
