@@ -64,10 +64,10 @@ end
 
 out.ExpRef = ExpRef;
 out.pars = pars;
-out.meanFrame = mean(doppler.frames, 3);
+out.meanFrame = min(doppler.frames, [], 3);
 
 mov = rmSVD(doppler.frames, 1);
 
-out.averageMov = getAverageMovies(mov, fusiFrameTimes, stimTimes, pars);
+% out.averageMov = getAverageMovies(mov, fusiFrameTimes, stimTimes, pars);
 out.maps = getPreferenceMaps(mov, fusiFrameTimes, stimTimes, pars);
 

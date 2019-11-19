@@ -1,9 +1,15 @@
-animalName = 'PC036';
+animalName = 'PC037';
 
 br = Brain(animalName);
 
 nStacks = length(br.yStacks);
 
+%%
+for iStack = 1:nStacks
+    h = br.yStacks(iStack).manualCrop;
+    close(h);
+end
+    
 %%  select the reference stack
 
 [~, datesRaw, ~] = dat.parseExpRef({br.yStacks.ExpRef});
@@ -36,7 +42,7 @@ for iStack = 1:nStacks
     toc
 end
 
-%% align all the stacks and calculate an average stack
+% align all the stacks and calculate an average stack
 
 refStackSize = size(br.yStacks(refStackIndex).getDoppler.doppler);
 allStacks = nan([refStackSize, nStacks]);
@@ -70,10 +76,30 @@ for iStack = 1:nStacks
     toc
 end
 
+allStacks = nan([refStackSize, nStacks]);
+for iStack = 1:nStacks
+    moving = br.yStacks(iStack).getDoppler.doppler;
+    [oneStack, ~] = imwarp(moving, tf(iStack).Rmoving, tf(iStack).affine, 'OutputView', tf(iStack).Rfixed, ...
+        'SmoothEdges', false, 'FillValues', NaN);
+    nanIdx = isnan(oneStack);
+    oneStack(nanIdx) = 0;
+    oneStack = imwarp(oneStack, tf(iStack).D, 'linear', 'SmoothEdges', false);
+    oneStack(nanIdx) = NaN;
+    prc = prctile(oneStack(:), [0.1, 99.9]);
+    oneStack = min(1, max(0, (oneStack-prc(1))/diff(prc)));
+    allStacks(:,:,:,iStack) = oneStack;
+end
+averageStack = nanmean(allStacks, 4);
+refStack2 = copy(refStack);
+refStack2.Doppler = averageStack;
+
+
 hFig = figure;
 br.yStacks(refStackIndex).plotVolume(subplot(2,2,1));
-refStack.plotVolume(subplot(2,2,2));
+refStack.plotVolume(subplot(2,2,3));
+refStack2.plotVolume(subplot(2,2,4));
 refStack.plotSlices;
+refStack2.plotSlices;
 
 %% get transform from all stack sto an average stack
 alignStacksPlayground(br.yStacks(2), br.yStacks(3));

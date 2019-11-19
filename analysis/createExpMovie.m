@@ -1,9 +1,9 @@
 function F = createExpMovie(dataIn)
 
-
-
 mov = dataIn.doppler.frames;
-xIdx = dataIn.doppler.xAxis>=2 & dataIn.doppler.xAxis <=10.8;
+% xIdx = dataIn.doppler.xAxis>=2 & dataIn.doppler.xAxis <=10.8;
+xIdx = dataIn.doppler.xAxis>=2.4 & dataIn.doppler.xAxis <=10.4;
+xMean = mean(dataIn.doppler.xAxis(xIdx));
 zIdx = dataIn.doppler.zAxis>=0.2;
 mov = mov(zIdx, xIdx, ~dataIn.idxOutliers);
 tAxis = dataIn.fusiFrameTimes(~dataIn.idxOutliers);
@@ -32,7 +32,7 @@ cbFake.Visible = 'off';
 
 
 ax = subplot(nRows, nColumns, 2);
-hIm = imagesc(dataIn.doppler.xAxis(xIdx), dataIn.doppler.zAxis(zIdx), log(mean(dataIn.doppler.frames(zIdx, xIdx, :), 3)));
+hIm = imagesc(dataIn.doppler.xAxis(xIdx) - xMean, dataIn.doppler.zAxis(zIdx), log(mean(dataIn.doppler.frames(zIdx, xIdx, :), 3)));
 axis equal tight
 colormap(ax, 'hot')
 box off;
@@ -58,7 +58,7 @@ drawnow;
 F = repmat(getframe(hFig, cropRect), 1, 30);
 pause(3);
 
-mm = prctile(mov(:), [1 99.9]);
+mm = prctile(mov(:), [1 99.95]);
 for iFrame = 1:size(mov, 3)
     if iFrame==1
         hIm.CData = mov(:,:,iFrame);

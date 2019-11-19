@@ -18,6 +18,10 @@ classdef Brain < handle
             obj.yStacks = yStacks;
             
         end
+        
+        function alignAllStacks(obj)
+            nStacks = length(obj.yStacks);
+        end
     end
     
 end
