@@ -12,7 +12,7 @@ fUSiListener;
 
 %% 
 animalName = 'CR019';
-yy = 0:0.1:4;
+yy = 0:0.1:4.3;
 
 %% This is for older slow fUSi
 acquireYStack_old(animalName, yy, SCAN, motorObj);
