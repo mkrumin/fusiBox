@@ -5,7 +5,7 @@ function acquireYStack_R07PX(mouseName, yCoords, S, M)
 % S - SCAN object to control the fUSi acquisition
 % M - motor object to control the movement
 
-Nimg = 15;
+Nimg = 100;
 NimgBM = 1;
 dt = 0.5; % probably unnecessary
 quality = 'LQ';
@@ -42,7 +42,7 @@ for iY = 1:nY
     yStackDoppler(:,:,:,iY) = I;
     figure(hFig);
     subplot(nRows, nColumns, iY);
-    im = sqrt(min(yStackDoppler(:,:,:,iY), [], 3));
+    im = sqrt(max(yStackDoppler(:,:,:,iY), [], 3));
     imagesc(xAxisDop, zAxisDop, im);
     caxis(prctile(im(:), [1 99.7]));
     colormap hot;

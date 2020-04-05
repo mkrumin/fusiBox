@@ -33,8 +33,8 @@ fusVersion = 'R07PX';
 fUSiListener;
 
 %% stack acquisitions
-animalName = 'CR017';
-yy = 0:0.1:5;
+animalName = 'CR019';
+yy = 0.9;
 
 %% This is for older slow fUSi
 acquireYStack_R07PX(animalName, yy, SCAN, motorObj);
