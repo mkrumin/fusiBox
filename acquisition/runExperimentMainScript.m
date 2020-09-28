@@ -33,7 +33,7 @@ fusVersion = 'R07PX';
 fUSiListener;
 
 %% stack acquisitions
-animalName = 'CR019';
+animalName = 'test';
 yy = 0.9;
 
 %% This is for older slow fUSi
