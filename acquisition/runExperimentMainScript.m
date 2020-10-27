@@ -16,7 +16,7 @@ if mkSuccess
     setFolder(dummyFolder); %also creates subfolders (fus, fulldata, info, images)
     setFileName('test'); % sets SCAN.experimentName
     setParameters('parameters128.m')
-    setDepthCompute(5, 6)
+    setDepthCompute(3, 10)
     SCAN.folderFullData = 'Z:\fUSiFullData';
     SCAN.fulldata = SCAN.folderFullData;
 else
@@ -33,11 +33,11 @@ fusVersion = 'R07PX';
 fUSiListener;
 
 %% stack acquisitions
-animalName = 'test';
-yy = 0.9;
+animalName = 'agaroseWithBeads';
+yy = 0:0.05:5;
 
 %% This is for older slow fUSi
-acquireYStack_R07PX(animalName, yy, SCAN, motorObj);
+acquireYStack_R07PX(animalName, yy, SCAN, motorObj, 15);
 
 
 
